@@ -5,11 +5,11 @@ use crate::file_system::{FileSystem, Local, SSH};
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    file_system: WhichFileSystem,
-    port: u16,
+    pub file_system: WhichFileSystem,
+    pub port: u16,
 
-    ssh: Option<SSHConfig>,
-    local: Option<LocalConfig>,
+    pub ssh: Option<SSHConfig>,
+    pub local: Option<LocalConfig>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -21,17 +21,17 @@ pub enum WhichFileSystem {
 }
 
 #[derive(Debug, Deserialize)]
-struct SSHConfig {
-    host: String,
-    port: u16,
-    username: String,
-    password: String,
-    root: String,
+pub struct SSHConfig {
+    pub host: String,
+    pub port: u16,
+    pub username: String,
+    pub password: String,
+    pub root: String,
 }
 
 #[derive(Debug, Deserialize)]
-struct LocalConfig {
-    root: String,
+pub struct LocalConfig {
+    pub root: String,
 }
 
 impl Config {

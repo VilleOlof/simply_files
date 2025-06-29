@@ -20,6 +20,7 @@ pub trait FileSystem: Send + Sync + Debug {
     async fn rename(&self, from: &str, to: &str) -> Result<()>;
 }
 
+#[allow(unused)]
 #[derive(Debug, Clone)]
 pub struct FileMetadata {
     pub path: String,
