@@ -2,14 +2,14 @@ mod local;
 mod ssh;
 
 use async_trait::async_trait;
-use std::io::Result;
+use std::{fmt::Debug, io::Result};
 
 pub use local::Local;
 pub use ssh::SSH;
 
 #[allow(unused)]
 #[async_trait]
-pub trait FileSystem: Send + Sync {
+pub trait FileSystem: Send + Sync + Debug {
     async fn read(&self, path: &str) -> Result<Vec<u8>>;
     async fn write(&self, path: &str, data: &[u8]) -> Result<()>;
     async fn delete(&self, path: &str) -> Result<()>;

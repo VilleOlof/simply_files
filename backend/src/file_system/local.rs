@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use std::{
+    fmt::Debug,
     io::Result,
     path::PathBuf,
     time::{Duration, UNIX_EPOCH},
@@ -12,41 +13,58 @@ pub struct Local {
     pub root: PathBuf,
 }
 
+impl Debug for Local {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Local")
+    }
+}
+
+impl Local {
+    fn full_path(&self, path: &str) -> PathBuf {
+        self.root.join(path)
+    }
+}
+
 #[async_trait]
 impl FileSystem for Local {
+    #[tracing::instrument]
     async fn read(&self, path: &str) -> Result<Vec<u8>> {
-        let full_path = self.root.join(path);
-        tracing::debug!("[Local]: Reading {full_path:?}");
+        let full_path = self.full_path(path);
+        tracing::debug!("{:?}", full_path);
         fs::read(full_path).await
     }
 
+    #[tracing::instrument(skip(data))]
     async fn write(&self, path: &str, data: &[u8]) -> Result<()> {
-        let full_path = self.root.join(path);
-        tracing::debug!("[Local]: Writing to {full_path:?}");
+        let full_path = self.full_path(path);
+        tracing::debug!("{:?}", full_path);
         if let Some(parent) = full_path.parent() {
             fs::create_dir_all(parent).await?;
         }
         fs::write(full_path, data).await
     }
 
+    #[tracing::instrument]
     async fn delete(&self, path: &str) -> Result<()> {
-        let full_path = self.root.join(path);
-        tracing::debug!("[Local]: Deleting {full_path:?}");
+        let full_path = self.full_path(path);
+        tracing::debug!("{:?}", full_path);
         fs::remove_file(full_path).await
     }
 
+    #[tracing::instrument]
     async fn exists(&self, path: &str) -> Result<bool> {
-        let full_path = self.root.join(path);
-        tracing::debug!("[Local]: Checking if {full_path:?} exists");
+        let full_path = self.full_path(path);
+        tracing::debug!("{:?}", full_path);
         Ok(full_path.exists())
     }
 
+    #[tracing::instrument]
     async fn list_dir(&self, path: &str) -> Result<Vec<FileMetadata>> {
-        let base = self.root.join(path);
-        tracing::debug!("[Local]: Listing {base:?}");
+        let full_path = self.root.join(path);
+        tracing::debug!("{:?}", full_path);
         let entries = task::spawn_blocking(move || -> Result<Vec<FileMetadata>> {
             let mut result = Vec::new();
-            for entry in std::fs::read_dir(base)? {
+            for entry in std::fs::read_dir(full_path)? {
                 let entry = entry?;
                 let metadata = entry.metadata()?;
                 result.push(FileMetadata {
@@ -68,16 +86,18 @@ impl FileSystem for Local {
         entries
     }
 
+    #[tracing::instrument]
     async fn create_dir_all(&self, path: &str) -> Result<()> {
-        let full_path = self.root.join(path);
-        tracing::debug!("[Local]: Creating all dirs for {full_path:?}");
+        let full_path = self.full_path(path);
+        tracing::debug!("{:?}", full_path);
         fs::create_dir_all(full_path).await
     }
 
+    #[tracing::instrument]
     async fn rename(&self, from: &str, to: &str) -> Result<()> {
-        let from_path = self.root.join(from);
-        let to_path = self.root.join(to);
-        tracing::debug!("[Local]: Renaming {from_path:?} to {to_path:?}");
+        let from_path = self.full_path(from);
+        let to_path = self.full_path(to);
+        tracing::debug!("{:?} to {:?}", from_path, to_path);
         fs::rename(from_path, to_path).await
     }
 }

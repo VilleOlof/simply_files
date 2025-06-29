@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use ssh2::Session;
 use std::{
+    fmt::Debug,
     io::{Read, Result, Write},
     net::TcpStream,
     path::Path,
@@ -15,6 +16,12 @@ pub struct SSH {
     session: Mutex<Session>,
     sftp: ssh2::Sftp,
     root: String,
+}
+
+impl Debug for SSH {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("SSH")
+    }
 }
 
 impl SSH {
@@ -64,39 +71,44 @@ impl SSH {
 
 #[async_trait]
 impl FileSystem for SSH {
+    #[tracing::instrument]
     async fn read(&self, path: &str) -> Result<Vec<u8>> {
         let full_path = self.full_path(path);
-        tracing::debug!("[SSH]: Reading {full_path:?}");
+        tracing::debug!("{:?}", full_path);
         let mut file = self.sftp.open(Path::new(&full_path))?;
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)?;
         Ok(buffer)
     }
 
+    #[tracing::instrument(skip(data))]
     async fn write(&self, path: &str, data: &[u8]) -> Result<()> {
         let full_path = self.full_path(path);
-        tracing::debug!("[SSH]: Writing to {full_path:?}");
+        tracing::debug!("{:?}", full_path);
         let mut file = self.sftp.create(Path::new(&full_path))?;
         file.write_all(data)?;
         Ok(())
     }
 
+    #[tracing::instrument]
     async fn delete(&self, path: &str) -> Result<()> {
         let full_path = self.full_path(path);
-        tracing::debug!("[SSH]: Deleting {full_path:?}");
+        tracing::debug!("{:?}", full_path);
         self.sftp.unlink(Path::new(&full_path))?;
         Ok(())
     }
 
+    #[tracing::instrument]
     async fn exists(&self, path: &str) -> Result<bool> {
         let full_path = self.full_path(path);
-        tracing::debug!("[SSH]: Checking if {full_path:?} exists");
+        tracing::debug!("{:?}", full_path);
         Ok(self.sftp.stat(Path::new(&full_path)).is_ok())
     }
 
+    #[tracing::instrument]
     async fn list_dir(&self, path: &str) -> Result<Vec<FileMetadata>> {
         let full_path = self.full_path(path);
-        tracing::debug!("[SSH]: Listing {full_path:?}");
+        tracing::debug!("{:?}", full_path);
         let entries = self.sftp.readdir(Path::new(&full_path))?;
         let mut result = Vec::new();
 
@@ -116,9 +128,10 @@ impl FileSystem for SSH {
         Ok(result)
     }
 
+    #[tracing::instrument]
     async fn create_dir_all(&self, path: &str) -> Result<()> {
         let full_path = self.full_path(path);
-        tracing::debug!("[SSH]: Creating all dirs for {full_path:?}");
+        tracing::debug!("{:?}", full_path);
         let parts = Path::new(&full_path).ancestors().collect::<Vec<_>>();
         for ancestor in parts.iter().rev() {
             let _ = self.sftp.mkdir(ancestor, 0o755); // ignore already exists
@@ -126,12 +139,13 @@ impl FileSystem for SSH {
         Ok(())
     }
 
+    #[tracing::instrument]
     async fn rename(&self, from: &str, to: &str) -> Result<()> {
-        let full_from = self.full_path(from);
-        let full_to = self.full_path(to);
-        tracing::debug!("[SSH]: Renaming {full_from:?} to {full_to:?}");
+        let from_path = self.full_path(from);
+        let to_path = self.full_path(to);
+        tracing::debug!("{:?} to {:?}", from_path, to_path);
         self.sftp
-            .rename(Path::new(&full_from), Path::new(&full_to), None)?;
+            .rename(Path::new(&from_path), Path::new(&to_path), None)?;
         Ok(())
     }
 }

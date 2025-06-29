@@ -1,1 +1,1 @@
-export const GITHUB_URL = "";
+export const GITHUB_URL = "https://github.com/VilleOlof/simply_files";
