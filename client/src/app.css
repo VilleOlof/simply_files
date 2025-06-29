@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
+@import 'tailwindcss';
+
+
+body {
+    font-family: 'Rubik';
+    font-weight: 400;
+}
+
+@theme {
+    --font-viga: 'Rubik', "sans-serif";
+
+    --text-sm: 0.750rem;
+    --text-base: 1rem;
+    --text-xl: 1.333rem;
+    --text-2xl: 1.777rem;
+    --text-3xl: 2.369rem;
+    --text-4xl: 3.158rem;
+    --text-5xl: 4.210rem;
+
+    --font-normal: 400;
+    --font-bold: 700;
+
+    --color-text: oklch(86.26% 0.014 262.38);
+    --color-background: oklch(16.05% 0.016 248.31);
+    --color-background-1: oklch(0.1884 0.016 248.31);
+    --color-background-2: oklch(0.2329 0.016 248.31);
+    --color-background-3: oklch(0.2745 0.016 248.31);
+    --color-primary: oklch(72.01% 0.135 225.41);
+    --color-secondary: oklch(39.85% 0.117 261.47);
+    --color-accent: oklch(45.99% 0.056 252.67);
+
+    --drop-shadow-box: 0.3rem 0.3rem 0px rgba(0, 0, 0, 0.25);
+}
+
+
+h1, h2, h3, h4, h5 {
+    font-family: 'Rubik';
+    font-weight: 700;
+}
+
+html {font-size: 100%;} /* 16px */
+
+h1 {font-size: 4.210rem; /* 67.36px */}
+
+h2 {font-size: 3.158rem; /* 50.56px */}
+
+h3 {font-size: 2.369rem; /* 37.92px */}
