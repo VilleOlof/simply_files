@@ -2,7 +2,9 @@ mod local;
 mod ssh;
 
 use async_trait::async_trait;
+use std::pin::Pin;
 use std::{fmt::Debug, io::Result};
+use tokio_stream::Stream;
 
 pub use local::Local;
 pub use ssh::SSH;
@@ -12,6 +14,11 @@ pub use ssh::SSH;
 pub trait FileSystem: Send + Sync + Debug {
     async fn read(&self, path: &str) -> Result<Vec<u8>>;
     async fn write(&self, path: &str, data: &[u8]) -> Result<()>;
+    async fn write_stream(
+        &self,
+        path: &str,
+        stream: Pin<Box<dyn Stream<Item = Result<Vec<u8>>> + Send>>,
+    ) -> Result<()>;
     async fn delete(&self, path: &str) -> Result<()>;
     async fn exists(&self, path: &str) -> Result<bool>;
 

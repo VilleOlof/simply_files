@@ -3,9 +3,11 @@ use std::{
     fmt::Debug,
     io::Result,
     path::PathBuf,
+    pin::Pin,
     time::{Duration, UNIX_EPOCH},
 };
 use tokio::{fs, task};
+use tokio_stream::{Stream, StreamExt};
 
 use crate::file_system::{FileMetadata, FileSystem};
 
@@ -42,6 +44,30 @@ impl FileSystem for Local {
             fs::create_dir_all(parent).await?;
         }
         fs::write(full_path, data).await
+    }
+
+    #[tracing::instrument(skip(stream))]
+    async fn write_stream(
+        &self,
+        path: &str,
+        mut stream: Pin<Box<dyn Stream<Item = Result<Vec<u8>>> + Send>>,
+    ) -> Result<()> {
+        let full_path = self.full_path(path);
+        tracing::debug!("Streaming to {:?}", full_path);
+
+        if let Some(parent) = full_path.parent() {
+            fs::create_dir_all(parent).await?;
+        }
+
+        let mut file = fs::File::create(&full_path).await?;
+
+        use tokio::io::AsyncWriteExt;
+        while let Some(chunk_result) = stream.next().await {
+            let chunk = chunk_result?;
+            file.write_all(&chunk).await?;
+        }
+
+        Ok(())
     }
 
     #[tracing::instrument]

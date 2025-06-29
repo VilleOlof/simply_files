@@ -6,7 +6,8 @@ use crate::file_system::{FileSystem, Local, SSH};
 #[derive(Debug, Deserialize)]
 pub struct Config {
     pub file_system: WhichFileSystem,
-    pub port: u16,
+    pub addr: String,
+    pub token: String,
 
     pub ssh: Option<SSHConfig>,
     pub local: Option<LocalConfig>,
@@ -46,6 +47,7 @@ impl Config {
         toml::from_str(&str).expect("Invalid toml in config")
     }
 
+    #[tracing::instrument(skip(self))]
     pub fn get_file_system(&self) -> Box<dyn FileSystem> {
         match self.file_system {
             WhichFileSystem::Local => {
