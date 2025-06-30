@@ -11,6 +11,8 @@ use crate::{
 };
 
 mod config;
+mod db;
+mod download;
 mod file_system;
 mod protected;
 mod speed_test;
@@ -35,12 +37,15 @@ async fn main() {
     }
     let db = PoolOptions::new().connect(&config.db).await.unwrap();
 
+    db::init(&db).await.expect("Failed to init database tables");
+
     let addr = config.addr.clone(); // just so it lives long enough
     let (upload_limit, upload_timeout) = (config.upload_limit, config.upload_timeout);
     let state = Arc::new(AppState { config, fs, db });
 
     let app = Router::new()
         .route("/", get(root))
+        .route("/d/{*id}", get(download::download))
         .with_state(state.clone())
         .nest("/speed_test", speed_test())
         .nest("/m", protected_routes(state.clone()))

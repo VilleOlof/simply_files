@@ -8,7 +8,7 @@ http://simply.localhost:5173/
 - [ ] Fix all file related endpoints for /m
 - [ ] Fix a sqlite DB to sync file ids to their paths & statistics.  
 - [ ] One-time links (https://simply.lifelike.dev/u/<link_id>) for file uploads.
-- [ ] Proper handler for downloading files (https://simply.lifelike.dev/d/<file_id>)
+- [X] Proper handler for downloading files (https://simply.lifelike.dev/d/<file_id>)
 - [ ] Update so the client speed test adjusts to the current upload/download speed.  
 - [ ] Run db backups every so often onto the file_system.  
 
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS links (
 CREATE TABLE IF NOT EXISTS files (
     id TEXT PRIMARY KEY, -- the unique id for the file, used in the url
     path TEXT NOT NULL, -- (maybe just the full path on the server incase root is changed?). Used to locate the file  
-    size INTEGER NOT NULL, -- the size of the file in bytes, mostly used for stats and for fast access
+    size INTEGER DEFAULT 0, -- the size of the file in bytes, mostly used for stats and for fast access
     download_count INTEGER DEFAULT 0, -- download count
     last_downloaded_at TIMESTAMP, -- when the file was last downloaded
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- when the file was uploaded  

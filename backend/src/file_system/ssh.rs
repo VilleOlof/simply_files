@@ -5,12 +5,13 @@ use std::{
     io::{Read, Result, Write},
     net::TcpStream,
     path::Path,
+    pin::Pin,
     sync::Mutex,
     time::Duration,
 };
-use tokio_stream::StreamExt;
+use tokio_stream::{Stream, StreamExt};
 
-use crate::file_system::{FileMetadata, FileSystem, WriteStream};
+use crate::file_system::{FSStream, FileMetadata, FileSystem};
 
 pub struct SSH {
     #[allow(unused)]
@@ -82,6 +83,42 @@ impl FileSystem for SSH {
         Ok(buffer)
     }
 
+    #[tracing::instrument]
+    async fn read_stream(&self, path: &str) -> Result<FSStream> {
+        let full_path = self.full_path(path);
+        tracing::debug!("Streaming from {:?}", full_path);
+
+        let file = self.sftp.open(Path::new(&full_path))?;
+
+        let (tx, rx) =
+            tokio::sync::mpsc::channel::<std::result::Result<Vec<u8>, std::io::Error>>(16);
+
+        tokio::task::spawn_blocking(move || {
+            const CHUNK_SIZE: usize = 8192;
+            let mut file = file;
+            let mut buffer = vec![0u8; CHUNK_SIZE];
+
+            loop {
+                match file.read(&mut buffer) {
+                    Ok(0) => break, // EOF
+                    Ok(bytes_read) => {
+                        let chunk = buffer[..bytes_read].to_vec();
+                        if tx.blocking_send(Ok(chunk)).is_err() {
+                            break; // Channel closed
+                        }
+                    }
+                    Err(e) => {
+                        let _ = tx.blocking_send(Err(e));
+                        break;
+                    }
+                }
+            }
+        });
+
+        let stream = tokio_stream::wrappers::ReceiverStream::new(rx);
+        Ok(Box::pin(stream))
+    }
+
     #[tracing::instrument(skip(data))]
     async fn write(&self, path: &str, data: &[u8]) -> Result<()> {
         let full_path = self.full_path(path);
@@ -92,7 +129,11 @@ impl FileSystem for SSH {
     }
 
     #[tracing::instrument(skip(stream))]
-    async fn write_stream(&self, path: &str, mut stream: WriteStream) -> Result<()> {
+    async fn write_stream(
+        &self,
+        path: &str,
+        mut stream: Pin<Box<dyn Stream<Item = Result<Vec<u8>>> + Send>>,
+    ) -> Result<()> {
         let full_path = self.full_path(path);
         tracing::debug!("Streaming to {:?}", full_path);
         let mut file = self.sftp.create(Path::new(&full_path))?;
@@ -118,6 +159,19 @@ impl FileSystem for SSH {
         let full_path = self.full_path(path);
         tracing::debug!("{:?}", full_path);
         Ok(self.sftp.stat(Path::new(&full_path)).is_ok())
+    }
+
+    #[tracing::instrument]
+    async fn metadata(&self, path: &str) -> Result<FileMetadata> {
+        let full_path = self.full_path(path);
+        tracing::debug!("{:?}", full_path);
+        let stat = self.sftp.stat(&Path::new(&full_path))?;
+        Ok(FileMetadata {
+            path: full_path,
+            is_dir: stat.is_dir(),
+            size: stat.raw().filesize,
+            modified: stat.raw().mtime as u64,
+        })
     }
 
     #[tracing::instrument]

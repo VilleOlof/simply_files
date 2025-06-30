@@ -7,7 +7,7 @@ use std::{fmt::Debug, io::Result};
 pub use local::Local;
 pub use ssh::SSH;
 
-pub type WriteStream = std::pin::Pin<
+pub type FSStream = std::pin::Pin<
     Box<dyn tokio_stream::Stream<Item = std::result::Result<Vec<u8>, std::io::Error>> + Send>,
 >;
 
@@ -15,10 +15,12 @@ pub type WriteStream = std::pin::Pin<
 #[async_trait]
 pub trait FileSystem: Send + Sync + Debug {
     async fn read(&self, path: &str) -> Result<Vec<u8>>;
+    async fn read_stream(&self, path: &str) -> Result<FSStream>;
     async fn write(&self, path: &str, data: &[u8]) -> Result<()>;
-    async fn write_stream(&self, path: &str, stream: WriteStream) -> Result<()>;
+    async fn write_stream(&self, path: &str, stream: FSStream) -> Result<()>;
     async fn delete(&self, path: &str) -> Result<()>;
     async fn exists(&self, path: &str) -> Result<bool>;
+    async fn metadata(&self, path: &str) -> Result<FileMetadata>;
 
     async fn list_dir(&self, path: &str) -> Result<Vec<FileMetadata>>;
     async fn create_dir_all(&self, path: &str) -> Result<()>;

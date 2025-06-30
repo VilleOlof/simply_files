@@ -1,16 +1,10 @@
-use axum::{
-    body::{Body, BodyDataStream},
-    extract::State,
-    http::StatusCode,
-    response::{IntoResponse, Response},
-};
-use std::{path::Path, sync::Arc};
+use axum::body::BodyDataStream;
+use std::path::Path;
 use tokio_stream::StreamExt;
 
-use crate::{
-    AppState,
-    file_system::{FileSystem, WriteStream},
-};
+use crate::file_system::{FSStream, FileSystem};
+
+pub mod private;
 
 /// Main function for streaming files from a client to the given file system
 async fn upload_via_stream(
@@ -30,7 +24,7 @@ async fn upload_via_stream(
             .map(|frame| frame.to_vec())
             .map_err(|e| Error::new(ErrorKind::Other, e))
     });
-    let pinned_stream: WriteStream = Box::pin(byte_stream);
+    let pinned_stream: FSStream = Box::pin(byte_stream);
 
     fs.write_stream(&path.as_ref().to_string_lossy(), pinned_stream)
         .await
@@ -48,16 +42,3 @@ fn path_is_valid(path: impl AsRef<std::path::Path>) -> bool {
 
     components.count() == 1
 }
-
-pub async fn private_upload(
-    State(state): State<Arc<AppState>>,
-    axum::extract::Path(path): axum::extract::Path<String>,
-    body: Body,
-) -> Result<Response, StatusCode> {
-    let data_stream = body.into_data_stream();
-    match upload_via_stream(&state.fs, data_stream, path).await {
-        Ok(_) => Ok(StatusCode::CREATED.into_response()),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
-    }
-}
-// https://simply-backend.lifelike.dev/m/upload/media/content/2025-05-23%2024-52.mkv

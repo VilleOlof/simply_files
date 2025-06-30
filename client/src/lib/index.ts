@@ -63,7 +63,7 @@ export function upload_file(file: File, endpoint: "/m/upload" | "/one-time/uploa
         }
 
         request.onload = () => {
-            if (request.status === 200) {
+            if (request.status === 201) {
                 console.log("File uploaded successfully.");
             } else {
                 console.error("Failed to upload file:", request.statusText);
