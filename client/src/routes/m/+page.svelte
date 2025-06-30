@@ -1,5 +1,6 @@
 <script>
 	import { PUBLIC_BACKEND } from '$env/static/public';
+	import DropFile from '$lib/DropFile.svelte';
 </script>
 
 <h1>Home protected</h1>
@@ -9,3 +10,5 @@
 		let res = await fetch(`${PUBLIC_BACKEND}/m/check`, { credentials: 'include' });
 	}}>check</button
 >
+
+<DropFile />

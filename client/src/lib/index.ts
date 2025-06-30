@@ -33,3 +33,47 @@ export async function logout(): Promise<boolean> {
 
     return true;
 }
+
+export function upload_file(file: File, endpoint: "/m/upload" | "/one-time/upload"): void {
+    try {
+        let request = new XMLHttpRequest();
+
+        request.open('POST', `${PUBLIC_BACKEND}${endpoint}/${file.name}`);
+        request.withCredentials = true;
+        request.setRequestHeader('Content-Type', 'application/octet-stream');
+        request.setRequestHeader('X-Filename', file.name);
+
+        request.upload.onprogress = (e) => {
+            let percent = Math.round((e.loaded / file.size) * 100);
+            if (e.total === e.loaded || percent >= 100) {
+                percent = 100;
+
+                dispatchEvent(new CustomEvent('upload-complete', {
+                    detail: {
+                        percent,
+                    }
+                }));
+            }
+
+            dispatchEvent(new CustomEvent('upload-progress', {
+                detail: {
+                    percent,
+                }
+            }));
+        }
+
+        request.onload = () => {
+            if (request.status === 200) {
+                console.log("File uploaded successfully.");
+            } else {
+                console.error("Failed to upload file:", request.statusText);
+            }
+        }
+
+        request.send(file);
+    }
+    catch (e) {
+        console.error("Error during file upload:", e);
+
+    }
+}

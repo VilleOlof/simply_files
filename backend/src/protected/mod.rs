@@ -1,16 +1,14 @@
-use std::{pin::Pin, sync::Arc};
+use std::sync::Arc;
 
 use axum::{
     Router,
-    body::Body,
     extract::{Request, State},
     http::{HeaderMap, StatusCode},
     middleware::{Next, from_fn_with_state},
-    response::{IntoResponse, Response},
+    response::Response,
     routing::{get, post},
 };
 use axum_extra::extract::CookieJar;
-use tokio_stream::{Stream, StreamExt};
 
 use crate::AppState;
 
@@ -22,31 +20,10 @@ pub fn protected_routes(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/check", get(|| async { "Simply... Files" }))
         .route("/logout", get(logout::logout))
-        .route("/upload/{*path}", post(stream_upload))
+        .route("/upload/{*path}", post(crate::upload::private_upload))
         .route_layer(from_fn_with_state(state.clone(), token_auth))
         .route("/authenticate", post(authenticate::authenticate))
         .with_state(state.clone())
-}
-
-async fn stream_upload(
-    State(state): State<Arc<AppState>>,
-    axum::extract::Path(path): axum::extract::Path<String>,
-    body: Body,
-) -> Result<Response, StatusCode> {
-    let data_stream = body.into_data_stream();
-
-    let byte_stream = data_stream.map(|frame_result| {
-        frame_result
-            .map(|frame| frame.to_vec())
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
-    });
-    let pinned_stream: Pin<Box<dyn Stream<Item = Result<Vec<u8>, std::io::Error>> + Send>> =
-        Box::pin(byte_stream);
-
-    match state.fs.write_stream(&path, pinned_stream).await {
-        Ok(_) => Ok(StatusCode::CREATED.into_response()),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
-    }
 }
 
 /// Main authentication layer

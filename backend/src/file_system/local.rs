@@ -3,13 +3,12 @@ use std::{
     fmt::Debug,
     io::Result,
     path::PathBuf,
-    pin::Pin,
     time::{Duration, UNIX_EPOCH},
 };
 use tokio::{fs, task};
-use tokio_stream::{Stream, StreamExt};
+use tokio_stream::StreamExt;
 
-use crate::file_system::{FileMetadata, FileSystem};
+use crate::file_system::{FileMetadata, FileSystem, WriteStream};
 
 pub struct Local {
     pub root: PathBuf,
@@ -47,11 +46,7 @@ impl FileSystem for Local {
     }
 
     #[tracing::instrument(skip(stream))]
-    async fn write_stream(
-        &self,
-        path: &str,
-        mut stream: Pin<Box<dyn Stream<Item = Result<Vec<u8>>> + Send>>,
-    ) -> Result<()> {
+    async fn write_stream(&self, path: &str, mut stream: WriteStream) -> Result<()> {
         let full_path = self.full_path(path);
         tracing::debug!("Streaming to {:?}", full_path);
 

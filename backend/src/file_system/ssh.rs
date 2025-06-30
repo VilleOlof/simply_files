@@ -5,13 +5,12 @@ use std::{
     io::{Read, Result, Write},
     net::TcpStream,
     path::Path,
-    pin::Pin,
     sync::Mutex,
     time::Duration,
 };
-use tokio_stream::{Stream, StreamExt};
+use tokio_stream::StreamExt;
 
-use crate::file_system::{FileMetadata, FileSystem};
+use crate::file_system::{FileMetadata, FileSystem, WriteStream};
 
 pub struct SSH {
     #[allow(unused)]
@@ -93,11 +92,7 @@ impl FileSystem for SSH {
     }
 
     #[tracing::instrument(skip(stream))]
-    async fn write_stream(
-        &self,
-        path: &str,
-        mut stream: Pin<Box<dyn Stream<Item = Result<Vec<u8>>> + Send>>,
-    ) -> Result<()> {
+    async fn write_stream(&self, path: &str, mut stream: WriteStream) -> Result<()> {
         let full_path = self.full_path(path);
         tracing::debug!("Streaming to {:?}", full_path);
         let mut file = self.sftp.create(Path::new(&full_path))?;
