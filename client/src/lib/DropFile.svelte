@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { upload_file } from '$lib';
+	import { upload_file, type UploadEndpoint } from '$lib';
+
+	const { endpoint, one_time_id }: { endpoint: UploadEndpoint; one_time_id?: string } = $props();
 
 	let upload_progress = $state<number | null>(null);
 
@@ -20,7 +22,12 @@
 		if (files !== null && files.length > 0) {
 			addEventListener('upload-complete', file_upload_complete);
 			addEventListener('upload-progress', file_upload_progress);
-			upload_file(files[0], '/m/upload');
+			upload_file(
+				files[0],
+				endpoint,
+				// mhmhm beautiful
+				one_time_id !== undefined ? files[0].name + `?id=${one_time_id}` : files[0].name
+			);
 		}
 	}
 

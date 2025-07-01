@@ -34,11 +34,13 @@ export async function logout(): Promise<boolean> {
     return true;
 }
 
-export function upload_file(file: File, endpoint: "/m/upload" | "/one-time/upload"): void {
+export type UploadEndpoint = "/m/upload" | "/o/upload";
+
+export function upload_file(file: File, endpoint: UploadEndpoint, path: string): void {
     try {
         let request = new XMLHttpRequest();
 
-        request.open('POST', `${PUBLIC_BACKEND}${endpoint}/${file.name}`);
+        request.open('POST', `${PUBLIC_BACKEND}${endpoint}/${path}`);
         request.withCredentials = true;
         request.setRequestHeader('Content-Type', 'application/octet-stream');
         request.setRequestHeader('X-Filename', file.name);

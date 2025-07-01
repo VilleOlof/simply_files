@@ -65,6 +65,10 @@ impl File {
         .execute(db)
         .await?;
 
+        query(r#"CREATE INDEX IF NOT EXISTS idx_files_path ON files (path);"#)
+            .execute(db)
+            .await?;
+
         Ok(())
     }
 

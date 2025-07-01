@@ -1,6 +1,10 @@
 use std::{sync::Arc, time::Duration};
 
-use axum::{Router, extract::DefaultBodyLimit, routing::get};
+use axum::{
+    Router,
+    extract::DefaultBodyLimit,
+    routing::{get, post},
+};
 use sqlx::{SqlitePool, pool::PoolOptions};
 use tower_http::{cors::CorsLayer, timeout::TimeoutLayer};
 use tracing::Level;
@@ -46,6 +50,8 @@ async fn main() {
     let app = Router::new()
         .route("/", get(root))
         .route("/d/{*id}", get(download::download))
+        .route("/o/upload/{*name}", post(upload::public::upload))
+        .route("/verify_link/{*id}", post(protected::link::verify_link))
         .with_state(state.clone())
         .nest("/speed_test", speed_test())
         .nest("/m", protected_routes(state.clone()))

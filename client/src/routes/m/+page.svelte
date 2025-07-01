@@ -11,4 +11,4 @@
 	}}>check</button
 >
 
-<DropFile />
+<DropFile endpoint={'/m/upload'} />
