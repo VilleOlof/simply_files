@@ -13,8 +13,12 @@ use axum_extra::extract::CookieJar;
 use crate::{AppState, upload::private};
 
 mod authenticate;
+mod directory;
+mod file_system;
 pub mod link;
 mod logout;
+mod path_to_id;
+mod storage_limit;
 
 /// Routes that require a valid "token" specified in the config as Authorization header
 pub fn protected_routes(state: Arc<AppState>) -> Router {
@@ -23,6 +27,11 @@ pub fn protected_routes(state: Arc<AppState>) -> Router {
         .route("/logout", get(logout::logout))
         .route("/upload/{*path}", post(private::upload))
         .route("/new_link", post(link::new_link))
+        .route("/file_system", get(file_system::get_file_system))
+        .route("/storage_limit", get(storage_limit::get_used_storage_space))
+        .route("/directory/{*path}", get(directory::get_files))
+        .route("/translate_path/{*path}", get(path_to_id::path_to_id))
+        .route("/directory", get(directory::get_root))
         .route_layer(from_fn_with_state(state.clone(), token_auth))
         .route("/authenticate", post(authenticate::authenticate))
         .with_state(state.clone())

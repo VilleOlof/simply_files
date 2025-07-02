@@ -79,3 +79,57 @@ export function upload_file(file: File, endpoint: UploadEndpoint, path: string):
 
     }
 }
+
+export type FileMetadata = {
+    path: string,
+    is_dir: boolean,
+    size: number,
+    modified: number,
+}
+
+export async function get_files(path: string, token?: string, server?: boolean): Promise<FileMetadata[]> {
+    let dir_config = {
+        method: 'GET',
+        headers: {},
+        credentials: 'include'
+    };
+
+    if (server && token) {
+        dir_config.headers = {
+            'Authorization': `Bearer ${token}`
+        };
+    }
+
+    const response = await fetch(`${PUBLIC_BACKEND}/m/directory${path !== "" ? `/${path}` : ""}`, dir_config as RequestInit);
+    if (!response.ok) {
+        console.error("Failed to fetch files:", response.statusText);
+        throw new Error(`Failed to fetch files: ${response.statusText}`);
+    }
+
+    const data: FileMetadata[] = await response.json();
+
+    return data;
+}
+
+export function format_path(path: string): string {
+    const MAX_NAME_LENGTH = 20;
+
+    const name = path.split('.').slice(0, -1).join('.');
+    const ext = path.split('.').pop();
+
+    if (name.length > MAX_NAME_LENGTH) {
+        return `${name.slice(0, MAX_NAME_LENGTH)}... ${ext ? `.${ext}` : ''}`;
+    }
+
+    return path;
+}
+
+export type StorageLimit = {
+    used: number;
+    max: number;
+};
+
+export type FileSystemInfo = {
+    which: string,
+    about: string,
+}

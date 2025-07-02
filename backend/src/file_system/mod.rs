@@ -2,6 +2,7 @@ mod local;
 mod ssh;
 
 use async_trait::async_trait;
+use serde::Serialize;
 use std::{fmt::Debug, io::Result};
 
 pub use local::Local;
@@ -27,8 +28,7 @@ pub trait FileSystem: Send + Sync + Debug {
     async fn rename(&self, from: &str, to: &str) -> Result<()>;
 }
 
-#[allow(unused)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct FileMetadata {
     pub path: String,
     pub is_dir: bool,

@@ -3,7 +3,7 @@ use serde_repr::Serialize_repr;
 use sqlx::{
     Result, SqlitePool,
     prelude::{FromRow, Type},
-    query, query_as,
+    query, query_as, query_scalar,
 };
 use time::OffsetDateTime;
 
@@ -144,5 +144,13 @@ impl File {
         ).bind(amount.unwrap_or(1)).bind(&self.id).execute(db).await?;
 
         Ok(())
+    }
+
+    #[tracing::instrument(skip(db))]
+    pub async fn get_bytes_stored(db: &SqlitePool) -> Result<u64> {
+        let bytes: u64 = query_scalar(r#"SELECT SUM(size) FROM files"#)
+            .fetch_one(db)
+            .await?;
+        Ok(bytes)
     }
 }

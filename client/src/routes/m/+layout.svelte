@@ -5,5 +5,5 @@
 </script>
 
 {@render children()}
-
-<SpeedTest />
+<!-- 
+<SpeedTest /> -->

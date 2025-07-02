@@ -38,6 +38,17 @@ pub struct LocalConfig {
     pub root: String,
 }
 
+impl WhichFileSystem {
+    #[allow(unused)]
+    pub fn to_string(&self) -> String {
+        (match self {
+            &Self::Local => "Local",
+            &Self::SSH => "SSH",
+        })
+        .to_string()
+    }
+}
+
 impl Config {
     const CONFIG_FILE: &'static str = "config.toml";
 

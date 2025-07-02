@@ -11,6 +11,7 @@ ssh2 = "0.9"
 toml = "0.8.23"
 serde = { version = "1.0", features = ["derive"] }
 serde_repr = "0.1"
+serde_json = "1.0"
 tracing = "0.1"
 tracing-subscriber = "0.3.0"
 axum = { version = "0.8.4", features = ["macros"] }

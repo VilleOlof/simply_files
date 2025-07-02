@@ -149,6 +149,7 @@ dependencies = [
  "percent-encoding",
  "rand 0.9.1",
  "serde",
+ "serde_json",
  "serde_repr",
  "sqlx",
  "ssh2",

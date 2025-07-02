@@ -4,7 +4,7 @@ use std::{
     fmt::Debug,
     io::{Read, Result, Write},
     net::TcpStream,
-    path::Path,
+    path::{Path, PathBuf},
     pin::Pin,
     sync::Mutex,
     time::Duration,
@@ -63,11 +63,14 @@ impl SSH {
     }
 
     fn full_path(&self, path: &str) -> String {
-        format!(
-            "{}/{}",
-            self.root.trim_end_matches('/'),
-            path.trim_start_matches('/')
-        )
+        if path == "" {
+            return self.root.clone();
+        };
+
+        PathBuf::from(&self.root)
+            .join(path)
+            .to_string_lossy()
+            .to_string()
     }
 }
 

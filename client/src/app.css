@@ -22,6 +22,7 @@ body {
     --font-bold: 700;
 
     --color-text: oklch(86.26% 0.014 262.38);
+    --color-text-1: oklch(0.7641 0.014 262.38);
     --color-background: oklch(16.05% 0.016 248.31);
     --color-background-1: oklch(0.1884 0.016 248.31);
     --color-background-2: oklch(0.2329 0.016 248.31);

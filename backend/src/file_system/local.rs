@@ -24,6 +24,10 @@ impl Debug for Local {
 
 impl Local {
     fn full_path(&self, path: &str) -> PathBuf {
+        if path == "" {
+            return self.root.clone();
+        };
+
         self.root.join(path)
     }
 }
@@ -141,7 +145,7 @@ impl FileSystem for Local {
 
     #[tracing::instrument]
     async fn list_dir(&self, path: &str) -> Result<Vec<FileMetadata>> {
-        let full_path = self.root.join(path);
+        let full_path = self.full_path(path);
         tracing::debug!("{:?}", full_path);
         let entries = task::spawn_blocking(move || -> Result<Vec<FileMetadata>> {
             let mut result = Vec::new();
