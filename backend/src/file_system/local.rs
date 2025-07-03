@@ -28,7 +28,13 @@ impl Local {
             return self.root.clone();
         };
 
-        self.root.join(path)
+        let path = self.root.join(path);
+
+        if path.has_root() {
+            panic!("Root paths are not allowed & shouldn't ever happen?")
+        }
+
+        path
     }
 }
 
@@ -194,9 +200,13 @@ impl FileSystem for Local {
 
         if is_empty {
             fs::remove_dir(full_path).await?;
+            Ok(())
+        } else {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Tried to delete an empty directory",
+            ))
         }
-
-        Ok(())
     }
 
     async fn root_directory(&self) -> PathBuf {

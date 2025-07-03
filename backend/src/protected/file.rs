@@ -30,7 +30,7 @@ pub async fn remove_file(
 
 #[derive(Debug, Deserialize)]
 pub struct RenameQuery {
-    pub new: String,
+    pub to: String,
 }
 
 pub async fn rename_file(
@@ -38,8 +38,10 @@ pub async fn rename_file(
     Query(query): Query<RenameQuery>,
     State(state): State<Arc<AppState>>,
 ) -> Result<StatusCode, StatusCode> {
-    todo!("Sync with db");
-    match state.fs.rename(&path, &query.new).await {
+    let mut db_file = File::get_via_path(&state.db, &path).await.unwrap();
+    db_file.rename(&state.db, &query.to).await.unwrap();
+
+    match state.fs.rename(&path, &query.to).await {
         Err(err) => {
             tracing::error!("{err:?}");
             Err(StatusCode::INTERNAL_SERVER_ERROR)
@@ -59,6 +61,7 @@ pub async fn change_access(
     State(state): State<Arc<AppState>>,
 ) -> Result<StatusCode, StatusCode> {
     let access: FileAccess = query.access.into();
+    tracing::debug!("{path:?}");
     let mut file = File::get_via_path(&state.db, &path).await.unwrap();
 
     file.change_access(&state.db, access).await.unwrap();

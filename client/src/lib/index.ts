@@ -107,7 +107,7 @@ export async function get_files(path: string, token?: string, server?: boolean):
 }
 
 export function format_path(path: string): string {
-    const MAX_NAME_LENGTH = 20;
+    const MAX_NAME_LENGTH = 30;
 
     const name = path.split('.').slice(0, -1).join('.');
     const ext = path.split('.').pop();
@@ -194,6 +194,68 @@ export async function change_access(file: FileMetadata, access: number): Promise
     }
 }
 
+export async function rename_file(file: FileMetadata, new_name: string): Promise<void> {
+    let cleaned = get_good_path(file);
+    let new_path = cleaned.split('/').slice(0, -1).join('/') + '/' + new_name;
+    if (new_path.startsWith('/')) new_path = new_path.slice(1); // remove leading slash if exists
+
+    const response = await fetch(`${PUBLIC_BACKEND}/m/rename_file/${cleaned}?to=${new_path}`, {
+        method: 'POST',
+        credentials: 'include',
+    });
+
+    if (!response.ok) {
+        console.error("Failed to rename file:", response.statusText);
+        throw new Error(`Failed to rename file: ${response.statusText}`);
+    }
+}
+
+export async function get_unused_links(token?: string): Promise<FileLink[]> {
+    const response = await fetch(`${PUBLIC_BACKEND}/m/links`, {
+        credentials: 'include',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+
+    if (!response.ok) {
+        console.error("Failed to fetch unused links:", response.statusText);
+        throw new Error(`Failed to fetch unused links: ${response.statusText}`);
+    }
+
+    const data: FileLink[] = await response.json();
+    return data;
+}
+
+export async function delete_link(id: string): Promise<void> {
+    const response = await fetch(`${PUBLIC_BACKEND}/m/link/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+    });
+
+    if (!response.ok) {
+        console.error("Failed to delete link:", response.statusText);
+        throw new Error(`Failed to delete link: ${response.statusText}`);
+    }
+}
+
+export async function create_link(): Promise<FileLink> {
+    const response = await fetch(`${PUBLIC_BACKEND}/m/new_link`, {
+        method: 'POST',
+        credentials: 'include'
+    });
+
+    if (!response.ok) {
+        console.error("Failed to create link:", response.statusText);
+        throw new Error(`Failed to create link: ${response.statusText}`);
+    }
+
+    const data: FileLink = await response.json();
+    return data;
+}
+
+export function copy_link(link: FileLink) {
+    navigator.clipboard.writeText(`${location.origin}/u/${link.id}`);
+}
+
 export function clean_path(path: string): string {
     if (path.startsWith('/m/') || path.startsWith('/m')) path = path.slice(3);
     if (path.startsWith('/o/') || path.startsWith('/o')) path = path.slice(3);
@@ -207,6 +269,19 @@ export const get_good_path = (file: FileMetadata): string => {
     if (path.startsWith('/')) path = path.slice(1); // remove leading slash if exists
     return path;
 };
+
+export function fuckery_rust_time_to_date(time: number[]): Date {
+    // [year, days, hour, minute, second, _, _, _, _];
+    if (time.length != 9) {
+        throw new Error("Invalid time array length");
+    }
+
+    const [year, days, hour, minute, second] = time;
+    const date = new Date(Date.UTC(year, 0, days, hour, minute, second));
+    date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+
+    return date;
+}
 
 export type StorageLimit = {
     used: number;
@@ -236,4 +311,11 @@ export type FileMetadata = {
     modified: number,
     id: string,
     access: number,
+}
+
+export type FileLink = {
+    id: string,
+    uploaded_file?: string,
+    uploaded_at?: number[],
+    created_at: number[],
 }

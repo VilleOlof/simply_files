@@ -28,6 +28,8 @@ pub fn protected_routes(state: Arc<AppState>) -> Router {
         .route("/logout", get(logout::logout))
         .route("/upload/{*path}", post(private::upload))
         .route("/new_link", post(link::new_link))
+        .route("/links", get(link::get_unused_links))
+        .route("/link/{*id}", delete(link::delete_link))
         .route("/file_system", get(file_system::get_file_system))
         .route("/storage_limit", get(storage_limit::get_used_storage_space))
         .route("/directory/{*path}", get(directory::get_files))

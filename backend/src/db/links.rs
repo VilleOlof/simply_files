@@ -6,10 +6,10 @@ use crate::generate_id;
 
 #[derive(Debug, FromRow, Clone, Serialize)]
 pub struct FileLink {
-    id: String,
-    uploaded_file: Option<String>,
-    uploaded_at: Option<OffsetDateTime>,
-    created_at: OffsetDateTime,
+    pub id: String,
+    pub uploaded_file: Option<String>,
+    pub uploaded_at: Option<OffsetDateTime>,
+    pub created_at: OffsetDateTime,
 }
 
 impl FileLink {
@@ -64,6 +64,15 @@ impl FileLink {
         Ok(())
     }
 
+    #[tracing::instrument(skip(db))]
+    pub async fn get_unused_links(db: &SqlitePool) -> Result<Vec<FileLink>> {
+        Ok(
+            query_as(r#"SELECT * FROM links WHERE uploaded_file IS NULL;"#)
+                .fetch_all(db)
+                .await?,
+        )
+    }
+
     #[tracing::instrument(skip(self))]
     pub fn is_valid_to_use(&self) -> bool {
         if self.uploaded_file.is_some() && self.uploaded_at.is_some() {
@@ -71,5 +80,14 @@ impl FileLink {
         }
 
         true
+    }
+
+    #[tracing::instrument(skip(db))]
+    pub async fn delete(db: &SqlitePool, id: &str) -> Result<()> {
+        query(r#"DELETE FROM links WHERE id = ?;"#)
+            .bind(id)
+            .execute(db)
+            .await?;
+        Ok(())
     }
 }

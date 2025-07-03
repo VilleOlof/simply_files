@@ -1,7 +1,7 @@
 use serde::Serialize;
 use serde_repr::Serialize_repr;
 use sqlx::{
-    Execute, Result, SqlitePool,
+    Result, SqlitePool,
     prelude::{FromRow, Type},
     query, query_as, query_scalar,
 };
@@ -135,6 +135,19 @@ impl File {
             .await?;
 
         self.access = access.into();
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self, db))]
+    pub async fn rename(&mut self, db: &SqlitePool, new_path: &str) -> Result<()> {
+        query(r#"UPDATE files SET path = ? WHERE id = ?;"#)
+            .bind(new_path)
+            .bind(&self.id)
+            .execute(db)
+            .await?;
+
+        self.path = new_path.to_string();
 
         Ok(())
     }

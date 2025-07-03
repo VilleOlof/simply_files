@@ -67,10 +67,13 @@ impl SSH {
             return self.root.clone();
         };
 
-        PathBuf::from(&self.root)
-            .join(path)
-            .to_string_lossy()
-            .to_string()
+        let path = PathBuf::from(&self.root).join(path);
+
+        if path.has_root() {
+            panic!("Root paths are not allowed & shouldn't ever happen?")
+        }
+
+        path.to_string_lossy().to_string()
     }
 }
 
@@ -229,9 +232,13 @@ impl FileSystem for SSH {
 
         if is_empty {
             self.sftp.rmdir(Path::new(&full_path))?;
+            Ok(())
+        } else {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Tried to delete an empty directory",
+            ))
         }
-
-        Ok(())
     }
 
     async fn root_directory(&self) -> PathBuf {

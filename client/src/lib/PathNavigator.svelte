@@ -19,6 +19,12 @@
 	}
 
 	function update_parts() {
+		// special hidden edge case for one-time uploads
+		if (path === '.public_uploads') {
+			path_parts = ['.public_uploads'];
+			return;
+		}
+
 		const parts = location.pathname.split('/').filter((part) => part.length > 0);
 		if (['m', '/m', '/m/'].includes(parts[0])) {
 			parts.shift(); // Remove 'm' or empty part at the start

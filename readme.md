@@ -15,9 +15,10 @@ http://simply.localhost:5173/
 - [X] Remove directories (only when empty)  
 - [ ] toasts on client  
 - [ ] do a refresh on the entire files & db at some point  
-- [ ] fully fix rename (client and sync with db on server)  
-- [ ] notify that dir deletions only work on empty directories
-- [ ] add checks so a path before going into the file_system is NEVER begins with a /. because we dont wanna delete the root directory or even attempt it.  
+- [X] fully fix rename (client and sync with db on server)  
+- [X] notify that dir deletions only work on empty directories
+- [X] add checks so a path before going into the file_system is NEVER begins with a /. because we dont wanna delete the root directory or even attempt it.  
 - [ ] mobile support in css (upload, download, etc)  
 - [ ] Fix some page or way to add new one-time links and that stuff
-- [ ] Fix UI on one-time upload links  
+- [X] Fix UI on one-time upload links  
+- [ ] remove unwraps  

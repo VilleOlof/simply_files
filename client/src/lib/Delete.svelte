@@ -47,6 +47,11 @@
 		<p class="text-text-1">
 			This will permanently delete this {file.is_dir ? 'directory' : 'file'}
 		</p>
+		{#if file.is_dir}
+			<p class="text-text-1">
+				Deleting a directory only works if it <span class="text-text">no</span> entries
+			</p>
+		{/if}
 
 		<p
 			class="bg-background-1 mt-2 max-w-[34.75rem] overflow-scroll text-wrap break-all rounded px-3 py-2 text-xl text-red-500"

@@ -1,13 +1,36 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
 	import { PUBLIC_BACKEND } from '$env/static/public';
-	import { change_access, format_path, type FileMetadata } from '$lib';
+	import { change_access, format_path, rename_file, type FileMetadata } from '$lib';
 	import prettyBytes from 'pretty-bytes';
 
 	const { file }: { file: FileMetadata } = $props();
 	const date = new Date(file.modified * 1000);
 	let stop_top_level_click = false;
-	console.log(file);
+
+	let debounce_timeout: ReturnType<typeof setTimeout> | null = null;
+	async function handle_rename(event: Event) {
+		const input = event.target as HTMLInputElement;
+		const new_path = input.value.trim();
+
+		let current_name = file.path.split('/').pop() || '';
+		if (current_name == new_path) return;
+		if (!new_path || new_path.length === 0) return;
+		if (new_path.includes('/') || new_path.includes('\\')) return;
+
+		if (debounce_timeout) {
+			clearTimeout(debounce_timeout);
+		}
+
+		debounce_timeout = setTimeout(async () => {
+			try {
+				await rename_file(file, new_path);
+				await invalidateAll();
+			} catch (error) {
+				console.error('Failed to rename file:', error);
+			}
+		}, 500);
+	}
 
 	function get_download_link(file: FileMetadata): string {
 		return `${PUBLIC_BACKEND}/d/${file.id}`;
@@ -163,7 +186,16 @@
 			<div class="w-[5.5rem]"></div>
 		{/if}
 
-		<p class:underline={file.is_dir}>{format_path(file.path)}</p>
+		{#if file.is_dir}
+			<p class="underline">{format_path(file.path)}</p>
+		{:else}
+			<input
+				type="text"
+				value={format_path(file.path)}
+				onchange={handle_rename}
+				class=" focus:bg-background-1 rounded outline-none"
+			/>
+		{/if}
 	</div>
 
 	<div class="flex gap-3">
