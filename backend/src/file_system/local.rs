@@ -185,4 +185,21 @@ impl FileSystem for Local {
         tracing::debug!("{:?} to {:?}", from_path, to_path);
         fs::rename(from_path, to_path).await
     }
+
+    #[tracing::instrument]
+    async fn delete_empty_dir(&self, path: &str) -> Result<()> {
+        let full_path = self.full_path(&path);
+        tracing::debug!("{:?}", full_path);
+        let is_empty = self.list_dir(&path).await?.is_empty();
+
+        if is_empty {
+            fs::remove_dir(full_path).await?;
+        }
+
+        Ok(())
+    }
+
+    async fn root_directory(&self) -> PathBuf {
+        self.root.clone()
+    }
 }

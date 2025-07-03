@@ -220,4 +220,21 @@ impl FileSystem for SSH {
             .rename(Path::new(&from_path), Path::new(&to_path), None)?;
         Ok(())
     }
+
+    #[tracing::instrument]
+    async fn delete_empty_dir(&self, path: &str) -> Result<()> {
+        let full_path = self.full_path(&path);
+        tracing::debug!("{:?}", full_path);
+        let is_empty = self.list_dir(&path).await?.is_empty();
+
+        if is_empty {
+            self.sftp.rmdir(Path::new(&full_path))?;
+        }
+
+        Ok(())
+    }
+
+    async fn root_directory(&self) -> PathBuf {
+        PathBuf::from(&self.root)
+    }
 }

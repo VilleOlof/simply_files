@@ -1,17 +1,18 @@
 use std::sync::Arc;
 
 use axum::{
+    Json,
     extract::{Path, State},
-    response::IntoResponse,
+    http::StatusCode,
+    response::Result,
 };
 
-use crate::AppState;
+use crate::{AppState, db::file::File};
 
 pub async fn path_to_id(
     Path(path): Path<String>,
     State(state): State<Arc<AppState>>,
-) -> impl IntoResponse {
-    // remove root from the path FileMetadata
-    // and then where = path and use that id
-    ""
+) -> Result<Json<File>, StatusCode> {
+    let file = File::get_via_path(&state.db, &path).await.unwrap();
+    Ok(Json(file))
 }

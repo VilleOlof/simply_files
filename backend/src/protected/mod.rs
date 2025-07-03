@@ -6,7 +6,7 @@ use axum::{
     http::{HeaderMap, StatusCode},
     middleware::{Next, from_fn_with_state},
     response::Response,
-    routing::{get, post},
+    routing::{delete, get, post},
 };
 use axum_extra::extract::CookieJar;
 
@@ -14,6 +14,7 @@ use crate::{AppState, upload::private};
 
 mod authenticate;
 mod directory;
+mod file;
 mod file_system;
 pub mod link;
 mod logout;
@@ -32,6 +33,11 @@ pub fn protected_routes(state: Arc<AppState>) -> Router {
         .route("/directory/{*path}", get(directory::get_files))
         .route("/translate_path/{*path}", get(path_to_id::path_to_id))
         .route("/directory", get(directory::get_root))
+        .route("/directory/{*path}", post(directory::add_directory))
+        .route("/directory/{*path}", delete(directory::delete_directory))
+        .route("/delete_file/{*path}", delete(file::remove_file))
+        .route("/rename_file/{*path}", post(file::rename_file))
+        .route("/access/{*path}", post(file::change_access))
         .route_layer(from_fn_with_state(state.clone(), token_auth))
         .route("/authenticate", post(authenticate::authenticate))
         .with_state(state.clone())

@@ -1,5 +1,6 @@
 import { goto } from "$app/navigation";
 import { PUBLIC_BACKEND } from "$env/static/public";
+import { error } from "@sveltejs/kit";
 
 export const GITHUB_URL = "https://github.com/VilleOlof/simply_files";
 
@@ -80,12 +81,6 @@ export function upload_file(file: File, endpoint: UploadEndpoint, path: string):
     }
 }
 
-export type FileMetadata = {
-    path: string,
-    is_dir: boolean,
-    size: number,
-    modified: number,
-}
 
 export async function get_files(path: string, token?: string, server?: boolean): Promise<FileMetadata[]> {
     let dir_config = {
@@ -124,6 +119,95 @@ export function format_path(path: string): string {
     return path;
 }
 
+export async function get_file_from_path(path: string): Promise<DBFile> {
+    const response = await fetch(`${PUBLIC_BACKEND}/m/translate_path/${path}`, {
+        credentials: 'include'
+    });
+
+    if (!response.ok) {
+        console.error("Failed to fetch file:", response.statusText);
+        throw new Error(`Failed to fetch file: ${response.statusText}`);
+    }
+
+    const data: DBFile = await response.json();
+    return data;
+}
+
+
+export async function get_file_system(token: string): Promise<FileSystemInfo> {
+    const res = await fetch(`${PUBLIC_BACKEND}/m/file_system`, {
+        credentials: 'include',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        },
+    });
+    if (!res.ok) {
+        console.error("Failed to fetch file system:", res.statusText);
+        throw error(res.status, "Failed to fetch file system");
+    }
+
+    const data: FileSystemInfo = await res.json();
+
+    return data;
+}
+
+export async function get_storage_limit(token: string): Promise<StorageLimit> {
+    const res = await fetch(`${PUBLIC_BACKEND}/m/storage_limit`, {
+        credentials: 'include',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+    if (!res.ok) {
+        console.error("Failed to fetch storage limit:", res.statusText);
+        throw error(res.status, "Failed to fetch storage limit");
+    }
+
+    const data: StorageLimit = await res.json();
+
+    return data;
+}
+
+export async function add_directory(path: string): Promise<void> {
+    const response = await fetch(`${PUBLIC_BACKEND}/m/directory/${path}`, {
+        method: 'POST',
+        credentials: 'include'
+    });
+
+    if (!response.ok) {
+        console.error("Failed to create directory:", response.statusText);
+        throw new Error(`Failed to create directory: ${response.statusText}`);
+    }
+}
+
+export async function change_access(file: FileMetadata, access: number): Promise<void> {
+    let cleaned = get_good_path(file);
+
+    const response = await fetch(`${PUBLIC_BACKEND}/m/access/${cleaned}?access=${access}`, {
+        method: 'POST',
+        credentials: 'include',
+    });
+
+    if (!response.ok) {
+        console.error("Failed to change access:", response.statusText);
+        throw new Error(`Failed to change access: ${response.statusText}`);
+    }
+}
+
+export function clean_path(path: string): string {
+    if (path.startsWith('/m/') || path.startsWith('/m')) path = path.slice(3);
+    if (path.startsWith('/o/') || path.startsWith('/o')) path = path.slice(3);
+    if (path.startsWith('/')) path = path.slice(1);
+    return path;
+}
+
+export const get_good_path = (file: FileMetadata): string => {
+    let path = clean_path(window.location.pathname);
+    path = path + (path.endsWith('/') ? '' : '/') + file.path;
+    if (path.startsWith('/')) path = path.slice(1); // remove leading slash if exists
+    return path;
+};
+
 export type StorageLimit = {
     used: number;
     max: number;
@@ -132,4 +216,24 @@ export type StorageLimit = {
 export type FileSystemInfo = {
     which: string,
     about: string,
+}
+
+export type DBFile = {
+    id: string,
+    path: string,
+    size: number,
+    download_count: number,
+    last_downloaded_at?: Date,
+    created_at: Date,
+    updated_at: Date,
+    access: number,
+}
+
+export type FileMetadata = {
+    path: string,
+    is_dir: boolean,
+    size: number,
+    modified: number,
+    id: string,
+    access: number,
 }

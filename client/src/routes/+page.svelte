@@ -27,7 +27,8 @@
 	<p>- Easy to use interface</p>
 	<p>- Secure & fast, backend in Rust</p>
 	<p>- Easy to self-host, prebuilt binaries</p>
-	<p>- Folders & tags to help you organize</p>
+	<!-- <p>- Folders & tags to help you organize</p> -->
+	<p>- Folders to help you organize</p>
 	<p>- No ads, no payment, 100% free</p>
 	<p>- Store your files locally or via SFTP</p>
 </div>
@@ -49,7 +50,7 @@
 				onclick={async () => {
 					await goto('/m');
 				}}
-				class="bg-background-2 drop-shadow-background-3 drop-shadow-box hover:bg-secondary active:bg-primary text-shadow-lg text-shadow-background-1/50 cursor-pointer px-4 py-1 text-xl transition-all"
+				class="bg-background-2 drop-shadow-background-3 drop-shadow-box hover:bg-secondary active:bg-primary text-shadow-lg text-shadow-background-1/50 cursor-pointer rounded px-4 py-1 text-xl transition-all"
 			>
 				View panel</button
 			>
@@ -57,7 +58,7 @@
 				onclick={async () => {
 					if (await logout()) window.location.reload();
 				}}
-				class="bg-background-2 drop-shadow-background-3 drop-shadow-box hover:bg-secondary active:bg-primary text-shadow-lg text-shadow-background-1/50 cursor-pointer px-4 py-1 text-xl transition-all"
+				class="bg-background-2 drop-shadow-background-3 drop-shadow-box hover:bg-secondary active:bg-primary text-shadow-lg text-shadow-background-1/50 cursor-pointer rounded px-4 py-1 text-xl transition-all"
 			>
 				Logout</button
 			>
@@ -69,13 +70,13 @@
 				bind:value={token}
 				type="password"
 				placeholder="token..."
-				class="bg-background-2 drop-shadow-background-3 drop-shadow-box px-4 py-1 text-xl outline-none"
+				class="bg-background-2 drop-shadow-background-3 drop-shadow-box rounded px-4 py-1 text-xl outline-none"
 			/>
 			<button
 				onclick={async () => {
 					await login(token);
 				}}
-				class="bg-background-2 drop-shadow-background-3 drop-shadow-box hover:bg-secondary active:bg-primary text-shadow-lg text-shadow-background-1/50 cursor-pointer px-4 py-1 text-xl transition-all"
+				class="bg-background-2 drop-shadow-background-3 drop-shadow-box hover:bg-secondary active:bg-primary text-shadow-lg text-shadow-background-1/50 cursor-pointer rounded px-4 py-1 text-xl transition-all"
 			>
 				Login</button
 			>

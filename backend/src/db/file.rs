@@ -1,7 +1,7 @@
 use serde::Serialize;
 use serde_repr::Serialize_repr;
 use sqlx::{
-    Result, SqlitePool,
+    Execute, Result, SqlitePool,
     prelude::{FromRow, Type},
     query, query_as, query_scalar,
 };
@@ -52,7 +52,7 @@ impl File {
             r#"
                 CREATE TABLE IF NOT EXISTS files (
                     id TEXT PRIMARY KEY,
-                    path TEXT NOT NULL,
+                    path TEXT NOT NULL UNIQUE,
                     size INTEGER DEFAULT 0,
                     download_count INTEGER DEFAULT 0,
                     last_downloaded_at DATETIME,
@@ -77,8 +77,15 @@ impl File {
     }
 
     pub async fn get_via_id(db: &SqlitePool, id: &str) -> Result<Self> {
-        Ok(query_as(r#"SELECT * FROM files WHERE id = ?"#)
+        Ok(query_as(r#"SELECT * FROM files WHERE id = ?;"#)
             .bind(id)
+            .fetch_one(db)
+            .await?)
+    }
+
+    pub async fn get_via_path(db: &SqlitePool, path: &str) -> Result<Self> {
+        Ok(query_as(r#"SELECT * FROM files WHERE path = ?;"#)
+            .bind(path)
             .fetch_one(db)
             .await?)
     }
@@ -152,5 +159,28 @@ impl File {
             .fetch_one(db)
             .await?;
         Ok(bytes)
+    }
+
+    #[tracing::instrument(skip(db))]
+    pub async fn get_files_in_directory(db: &SqlitePool, path: &str) -> Result<Vec<Self>> {
+        let files = if path.is_empty() {
+            query_as(r#"SELECT * FROM files WHERE instr(path, '/') = 0"#)
+                .fetch_all(db)
+                .await?
+        } else {
+            query_as(
+                r#"
+                    SELECT * FROM files
+                        WHERE path LIKE ?1
+                        AND instr(substr(path, ?2 + 2), '/') = 0;
+                "#,
+            )
+            .bind(&format!("{}/%", &path))
+            .bind(path.len() as i64)
+            .fetch_all(db)
+            .await?
+        };
+
+        Ok(files)
     }
 }

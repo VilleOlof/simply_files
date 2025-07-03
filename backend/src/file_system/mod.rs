@@ -3,7 +3,7 @@ mod ssh;
 
 use async_trait::async_trait;
 use serde::Serialize;
-use std::{fmt::Debug, io::Result};
+use std::{fmt::Debug, io::Result, path::PathBuf};
 
 pub use local::Local;
 pub use ssh::SSH;
@@ -26,6 +26,9 @@ pub trait FileSystem: Send + Sync + Debug {
     async fn list_dir(&self, path: &str) -> Result<Vec<FileMetadata>>;
     async fn create_dir_all(&self, path: &str) -> Result<()>;
     async fn rename(&self, from: &str, to: &str) -> Result<()>;
+    async fn delete_empty_dir(&self, path: &str) -> Result<()>;
+
+    async fn root_directory(&self) -> PathBuf;
 }
 
 #[derive(Debug, Clone, Serialize)]
