@@ -10,7 +10,11 @@ use axum::{
 };
 use axum_extra::extract::CookieJar;
 
-use crate::{AppState, upload::private};
+use crate::{
+    AppState,
+    error::{SimplyError, err},
+    upload::private,
+};
 
 mod authenticate;
 mod directory;
@@ -52,10 +56,10 @@ async fn token_auth(
     State(state): State<Arc<AppState>>,
     request: Request,
     next: Next,
-) -> Result<Response, StatusCode> {
+) -> Result<Response, SimplyError> {
     match standalone_auth(jar, headers, &state.config.token) {
         true => (),
-        false => return Err(StatusCode::UNAUTHORIZED),
+        false => err!("Invalid token", UNAUTHORIZED),
     };
 
     let response = next.run(request).await;

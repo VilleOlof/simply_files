@@ -6,7 +6,7 @@ use axum::{
         HeaderMap, HeaderValue, StatusCode,
         header::{self, CONTENT_DISPOSITION, TRANSFER_ENCODING},
     },
-    response::{IntoResponse, Response},
+    response::{Response, Result},
 };
 use axum_extra::extract::CookieJar;
 use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
@@ -15,6 +15,7 @@ use crate::{
     AppState,
     db::file::{File, FileAccess},
     download_stream::DownloadStream,
+    error::{SimplyError, err},
     protected::standalone_auth,
 };
 
@@ -30,48 +31,34 @@ pub async fn download(
     headers: HeaderMap,
     Path(id): Path<String>,
     State(state): State<Arc<AppState>>,
-) -> impl IntoResponse {
+) -> Result<Response<DownloadStream>, SimplyError> {
     let file = match File::get_via_id(&state.db, &id).await {
         Ok(f) => f,
         Err(err) => match err {
-            sqlx::Error::RowNotFound => return Err(StatusCode::NOT_FOUND),
-            _ => {
-                tracing::error!("{err:?}");
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
-            }
+            sqlx::Error::RowNotFound => err!("No file with this id found", NOT_FOUND),
+            _ => return Err(SimplyError::from(err)),
         },
     };
 
     if !state.fs.exists(&file.path).await.unwrap_or(false) {
-        tracing::error!("No file at path: {:?}", file.path);
-        return Err(StatusCode::NOT_FOUND);
+        err!("No actual file found", NOT_FOUND);
     }
 
     if file.get_access() == FileAccess::Private
         && !standalone_auth(jar, headers, &state.config.token)
     {
-        return Err(StatusCode::UNAUTHORIZED);
+        err!("You can't access this file", UNAUTHORIZED);
     }
 
     let body = match state.fs.read_stream(&file.path).await {
         Ok(s) => DownloadStream::new(s, file.id.clone(), state.clone()),
-        Err(err) => {
-            tracing::error!("{err:?}");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
+        Err(err) => return Err(SimplyError::from(err)),
     };
 
-    let mut res = match Response::builder()
+    let mut res = Response::builder()
         .header(CONTENT_DISPOSITION, content_disposition(&file.path))
         .header(TRANSFER_ENCODING, HeaderValue::from_static("chunked"))
-        .body(body)
-    {
-        Ok(r) => r,
-        Err(err) => {
-            tracing::error!("{err:?}");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
+        .body(body)?;
 
     if let Some(mime) = get_mime_type(&file.path) {
         res.headers_mut().insert(header::CONTENT_TYPE, mime);
@@ -102,5 +89,7 @@ fn content_disposition(path: &str) -> HeaderValue {
         "attachment; filename*=UTF-8''{}",
         utf8_percent_encode(&name, NON_ALPHANUMERIC).to_string()
     ))
-    .unwrap()
+    .unwrap_or(HeaderValue::from_static(
+        "attachment; filename*=UTF-8''unknown",
+    ))
 }

@@ -10,7 +10,13 @@ use axum::{
 };
 use serde::Deserialize;
 
-use crate::{AppState, db::links::FileLink, generate_id, upload::handler_upload};
+use crate::{
+    AppState,
+    db::links::FileLink,
+    error::{SimplyError, err},
+    generate_id,
+    upload::handler_upload,
+};
 
 #[derive(Debug, Deserialize)]
 pub struct UploadQuery {
@@ -23,22 +29,22 @@ pub async fn upload(
     Query(query): Query<UploadQuery>,
     axum::extract::Path(name): axum::extract::Path<String>,
     body: Body,
-) -> Result<Response, StatusCode> {
+) -> Result<Response, SimplyError> {
     let link = match FileLink::get_via_id(&state.db, &query.id).await {
         Ok(l) => l,
         Err(err) => match err {
-            sqlx::Error::RowNotFound => return Err(StatusCode::NOT_FOUND),
-            _ => return Err(StatusCode::INTERNAL_SERVER_ERROR),
+            sqlx::Error::RowNotFound => err!("No link with this id found", NOT_FOUND),
+            _ => return Err(SimplyError::from(err)),
         },
     };
 
     if !link.is_valid_to_use() {
-        return Err(StatusCode::NOT_FOUND);
+        err!("Invalid link", UNAUTHORIZED);
     }
 
     let name = match PathBuf::from(name).file_name() {
         Some(f) => f.to_string_lossy().to_string(),
-        None => return Err(StatusCode::BAD_REQUEST),
+        None => err!("Invalid file name", BAD_REQUEST),
     };
 
     let linked_path = PathBuf::from(".public_uploads").join(&name);
@@ -46,10 +52,7 @@ pub async fn upload(
     // we mark the link as uploaded via this id before it has been uploaded
     // so we would want to preferebly do some Drop trait magic to do this after
     let id = generate_id(None);
-    if let Err(err) = link.uploaded_with(&state.db, &id).await {
-        tracing::error!("{err:?}");
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    };
+    link.uploaded_with(&state.db, &id).await?;
 
     handler_upload(state, &linked_path.to_string_lossy().to_string(), &id, body).await
 }

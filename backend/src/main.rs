@@ -1,4 +1,9 @@
-use std::{sync::Arc, time::Duration};
+use std::{
+    fs::{File, exists},
+    path::PathBuf,
+    sync::Arc,
+    time::Duration,
+};
 
 use axum::{
     Router,
@@ -18,6 +23,7 @@ mod config;
 mod db;
 mod download;
 mod download_stream;
+mod error;
 mod file_system;
 mod protected;
 mod speed_test;
@@ -37,11 +43,15 @@ async fn main() {
     let config = Config::read_config();
     let fs = config.get_file_system();
 
-    if !std::fs::exists(&config.db).expect("Failed to check if the database file exists") {
-        std::fs::File::create(&config.db).expect("Failed to create missing database file");
+    if !exists(&config.db).expect("Failed to check if the database file exists") {
+        File::create(&config.db).expect("Failed to create missing database file");
     }
-    let db = PoolOptions::new().connect(&config.db).await.unwrap();
 
+    if let Err(err) = init_folders(&fs).await {
+        panic!("Failed to create base folders, can't continue: {err:?}");
+    }
+
+    let db = PoolOptions::new().connect(&config.db).await.unwrap();
     db::init(&db).await.expect("Failed to init database tables");
 
     let addr = config.addr.clone(); // just so it lives long enough
@@ -91,4 +101,20 @@ pub fn generate_id(len: Option<usize>) -> String {
         .collect();
 
     hash
+}
+
+async fn init_folders(fs: &Box<dyn FileSystem>) -> std::io::Result<()> {
+    let root = fs.root_directory().await.to_string_lossy().to_string();
+    if !fs.exists(&root).await? {
+        fs.create_dir_all(&root).await?;
+    }
+    let public_uploads = PathBuf::from(root)
+        .join(".public_uploads")
+        .to_string_lossy()
+        .to_string();
+    if !fs.exists(&public_uploads).await? {
+        fs.create_dir_all(&public_uploads).await?;
+    }
+
+    Ok(())
 }

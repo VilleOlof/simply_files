@@ -8,7 +8,10 @@ use axum_extra::extract::{
 use serde::Deserialize;
 use time::OffsetDateTime;
 
-use crate::AppState;
+use crate::{
+    AppState,
+    error::{SimplyError, err},
+};
 
 #[derive(Debug, Deserialize)]
 pub struct AuthenticateBody {
@@ -19,9 +22,9 @@ pub async fn authenticate(
     jar: CookieJar,
     State(state): State<Arc<AppState>>,
     body: Json<AuthenticateBody>,
-) -> Result<CookieJar, StatusCode> {
+) -> Result<CookieJar, SimplyError> {
     if body.token != state.config.token {
-        return Err(StatusCode::UNAUTHORIZED);
+        err!("Invalid credentials", UNAUTHORIZED);
     }
 
     let mut expire = OffsetDateTime::now_utc();

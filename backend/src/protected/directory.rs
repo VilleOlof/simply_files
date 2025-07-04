@@ -8,18 +8,18 @@ use axum::{
 };
 use serde::Serialize;
 
-use crate::{AppState, db::file::File, file_system::FileMetadata};
+use crate::{AppState, db::file::File, error::SimplyError, file_system::FileMetadata};
 
 pub async fn get_files(
     Path(path): Path<String>,
     State(state): State<Arc<AppState>>,
-) -> Result<Json<Vec<ClientFile>>, StatusCode> {
+) -> Result<Json<Vec<ClientFile>>, SimplyError> {
     get(state, Some(&path)).await
 }
 
 pub async fn get_root(
     State(state): State<Arc<AppState>>,
-) -> Result<Json<Vec<ClientFile>>, StatusCode> {
+) -> Result<Json<Vec<ClientFile>>, SimplyError> {
     get(state, None).await
 }
 
@@ -81,18 +81,11 @@ impl ClientFile {
 async fn get(
     state: Arc<AppState>,
     path: Option<&str>,
-) -> Result<Json<Vec<ClientFile>>, StatusCode> {
-    let files = match state.fs.list_dir(path.unwrap_or("")).await {
-        Ok(f) => f,
-        Err(err) => {
-            tracing::error!("{err:?}");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
+) -> Result<Json<Vec<ClientFile>>, SimplyError> {
+    let files = state.fs.list_dir(path.unwrap_or("")).await?;
 
-    let db_files = crate::db::file::File::get_files_in_directory(&state.db, &path.unwrap_or(""))
-        .await
-        .unwrap();
+    let db_files =
+        crate::db::file::File::get_files_in_directory(&state.db, &path.unwrap_or("")).await?;
 
     let files = ClientFile::from(PathBuf::from(path.unwrap_or("")), files, db_files);
 
@@ -109,25 +102,15 @@ async fn get(
 pub async fn add_directory(
     Path(path): Path<String>,
     State(state): State<Arc<AppState>>,
-) -> Result<StatusCode, StatusCode> {
-    match state.fs.create_dir_all(&path).await {
-        Err(err) => {
-            tracing::error!("{err:?}");
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-        Ok(_) => Ok(StatusCode::OK),
-    }
+) -> Result<StatusCode, SimplyError> {
+    state.fs.create_dir_all(&path).await?;
+    Ok(StatusCode::OK)
 }
 
 pub async fn delete_directory(
     Path(path): Path<String>,
     State(state): State<Arc<AppState>>,
-) -> Result<StatusCode, StatusCode> {
-    match state.fs.delete_empty_dir(&path).await {
-        Err(err) => {
-            tracing::error!("{err:?}");
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-        Ok(_) => Ok(StatusCode::OK),
-    }
+) -> Result<StatusCode, SimplyError> {
+    state.fs.delete_empty_dir(&path).await?;
+    Ok(StatusCode::OK)
 }

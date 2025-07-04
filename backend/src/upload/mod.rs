@@ -7,6 +7,7 @@ use std::sync::Arc;
 use tokio_stream::StreamExt;
 
 use crate::db::file::File;
+use crate::error::{SimplyError, err};
 use crate::{
     AppState,
     file_system::{FSStream, FileSystem},
@@ -45,12 +46,11 @@ pub async fn handler_upload(
     path: &str,
     id: &str,
     body: Body,
-) -> Result<Response, StatusCode> {
+) -> Result<Response, SimplyError> {
     let mut file = match File::new(&state.db, &id, &path).await {
         Err(err) => {
-            tracing::error!("{err:?}");
-            clean_up(state, &id, &path).await;
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            clean_up(state, &id, &path).await?;
+            err!("Failed to create file entry", INTERNAL_SERVER_ERROR, err);
         }
         Ok(f) => f,
     };
@@ -59,17 +59,15 @@ pub async fn handler_upload(
     match upload_via_stream(&state.fs, data_stream, &path).await {
         Ok(_) => (),
         Err(err) => {
-            tracing::error!("{err:?}");
             // if the upload_stream fails, we need to backtrack to not get loose files
-            clean_up(state, &id, &path).await;
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            clean_up(state, &id, &path).await?;
+            err!("Failed upload via streaming", INTERNAL_SERVER_ERROR, err);
         }
     };
 
-    let metadata = state.fs.metadata(&path).await.unwrap();
+    let metadata = state.fs.metadata(&path).await?;
     file.successful_upload(&state.db, metadata.size as i64)
-        .await
-        .unwrap();
+        .await?;
 
     let mut response = Json(file).into_response();
     *response.status_mut() = StatusCode::CREATED;
@@ -90,11 +88,12 @@ fn path_is_valid(path: impl AsRef<std::path::Path>) -> bool {
     return true;
 }
 
-async fn clean_up(state: Arc<AppState>, id: &str, path: &str) {
-    // TODO: remove these unwraps
-    File::delete(&state.db, &id).await.unwrap();
+async fn clean_up(state: Arc<AppState>, id: &str, path: &str) -> Result<(), SimplyError> {
+    File::delete(&state.db, &id).await?;
 
-    if state.fs.exists(&path).await.unwrap() {
-        state.fs.delete(&path).await.unwrap();
+    if state.fs.exists(&path).await? {
+        state.fs.delete(&path).await?;
     }
+
+    Ok(())
 }

@@ -14,14 +14,14 @@ pub struct FileSystemInfo {
 pub async fn get_file_system(State(state): State<Arc<AppState>>) -> Json<FileSystemInfo> {
     let info = match state.config.file_system {
         WhichFileSystem::Local => {
-            let config = state.config.local.as_ref().unwrap();
+            let config = state.config.local.as_ref().expect("Invalid config");
             FileSystemInfo {
                 which: "Local".into(),
                 about: format!("{}", config.root),
             }
         }
         WhichFileSystem::SSH => {
-            let config = state.config.ssh.as_ref().unwrap();
+            let config = state.config.ssh.as_ref().expect("Invalid config");
             FileSystemInfo {
                 which: "SSH".into(),
                 about: format!(

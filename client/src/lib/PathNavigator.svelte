@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { afterNavigate, goto } from '$app/navigation';
+	import { afterNavigate, goto, invalidateAll } from '$app/navigation';
 	import { onMount, tick } from 'svelte';
 	import NewDirectory from './NewDirectory.svelte';
 
@@ -65,7 +65,7 @@
 	>
 
 	<button
-		onclick={() => window.location.reload()}
+		onclick={() => invalidateAll()}
 		aria-label="Reload current directory"
 		title="Reload current directory"
 		class="bg-background-2 hover:bg-background-3 drop-shadow-box drop-shadow-background-3 flex cursor-pointer items-center gap-2 rounded p-1 transition-colors"
