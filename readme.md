@@ -22,3 +22,5 @@ http://simply.localhost:5173/
 - [ ] Fix some page or way to add new one-time links and that stuff
 - [X] Fix UI on one-time upload links  
 - [ ] remove unwraps  
+- [ ] Auto create Local/SSH root folder on "first run" &  ".public_uploads"
+- [ ] Either upload queue or parallel multi-uploads

@@ -9,17 +9,13 @@
 	const { data }: PageProps = $props();
 </script>
 
-<TopStatusBar
-	file_system={data.file_system}
-	storage_limit={data.storage_limit}
-	is_link_page={true}
-/>
+<TopStatusBar file_system={data.file_system} storage_limit={data.storage_limit} />
 
 <FileList files={data.files} path={'.public_uploads'} />
 
 <div class="my-1"></div>
 
-<div class="flex w-1/3 flex-col gap-2">
+<div class="flex w-2/3 flex-col gap-2 xl:w-1/3">
 	{#each data.unused_links as link}
 		<div
 			class="bg-background-2 drop-shadow-box drop-shadow-background-3 flex justify-between gap-8 px-3 py-1 transition-colors"

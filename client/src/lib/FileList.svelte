@@ -38,7 +38,7 @@
 
 <PathNavigator {path} />
 
-<div class="flex w-1/3 flex-col gap-2">
+<div class="flex w-2/3 flex-col gap-2 xl:w-1/3">
 	{#each files as file}
 		<FileEntry {file} />
 	{/each}

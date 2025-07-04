@@ -1,4 +1,4 @@
-import { goto } from "$app/navigation";
+import { goto, invalidateAll } from "$app/navigation";
 import { PUBLIC_BACKEND } from "$env/static/public";
 import { error } from "@sveltejs/kit";
 
@@ -68,6 +68,7 @@ export function upload_file(file: File, endpoint: UploadEndpoint, path: string):
         request.onload = () => {
             if (request.status === 201) {
                 console.log("File uploaded successfully.");
+                invalidateAll();
             } else {
                 console.error("Failed to upload file:", request.statusText);
             }

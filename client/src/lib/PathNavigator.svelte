@@ -43,7 +43,7 @@
 	});
 </script>
 
-<div class="mb-5 flex w-1/3 gap-4">
+<div class="mb-5 flex w-2/3 gap-4 xl:w-1/3">
 	<button
 		onclick={async () => {
 			const parentPath = path_parts.slice(0, -1).join('/');

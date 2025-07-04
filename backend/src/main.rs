@@ -17,6 +17,7 @@ use crate::{
 mod config;
 mod db;
 mod download;
+mod download_stream;
 mod file_system;
 mod protected;
 mod speed_test;

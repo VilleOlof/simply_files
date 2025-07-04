@@ -5,12 +5,10 @@
 
 	const {
 		file_system,
-		storage_limit,
-		is_link_page = false
+		storage_limit
 	}: {
 		file_system: FileSystemInfo;
 		storage_limit: StorageLimit;
-		is_link_page?: boolean;
 	} = $props();
 	let storage_percentage = $state((storage_limit.used / storage_limit.max) * 100);
 
@@ -34,7 +32,7 @@
 </script>
 
 <div
-	class="bg-background-2 drop-shadow-box drop-shadow-background-3 mb-5 flex w-1/3 justify-between gap-3 px-8 py-2"
+	class="bg-background-2 drop-shadow-box drop-shadow-background-3 mb-5 flex w-2/3 justify-between gap-3 px-8 py-2 xl:w-1/3"
 >
 	<div class="flex items-center gap-4">
 		<div class="bg-background-1 relative h-6 w-fit min-w-[8rem] overflow-hidden rounded px-2">
@@ -83,23 +81,19 @@
 
 	<div class="flex items-center gap-4">
 		<div class="flex">
-			{#if is_link_page}
-				<button
-					onclick={async () => {
-						let link = await create_link();
-						copy_link(link);
-						await invalidateAll();
-					}}
-					class="bg-background-1 hover:bg-background-3 flex cursor-pointer items-center gap-2 rounded-l px-2 transition-colors"
-					>+</button
-				>
-			{/if}
+			<button
+				onclick={async () => {
+					let link = await create_link();
+					copy_link(link);
+					await invalidateAll();
+				}}
+				class="bg-background-1 hover:bg-background-3 flex cursor-pointer items-center gap-2 rounded-l px-2 transition-colors"
+				>+</button
+			>
 
 			<button
 				onclick={() => goto('/m/.public_uploads')}
-				class:rounded-r={is_link_page}
-				class:rounded={!is_link_page}
-				class="bg-background-1 hover:bg-background-3 flex cursor-pointer items-center gap-2 px-2 transition-colors"
+				class="bg-background-1 hover:bg-background-3 flex cursor-pointer items-center gap-2 rounded-r px-2 transition-colors"
 			>
 				<span>
 					<svg

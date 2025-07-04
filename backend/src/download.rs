@@ -1,7 +1,6 @@
 use std::{ffi::OsString, path::PathBuf, sync::Arc};
 
 use axum::{
-    body::Body,
     extract::{Path, State},
     http::{
         HeaderMap, HeaderValue, StatusCode,
@@ -15,6 +14,7 @@ use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
 use crate::{
     AppState,
     db::file::{File, FileAccess},
+    download_stream::DownloadStream,
     protected::standalone_auth,
 };
 
@@ -53,14 +53,13 @@ pub async fn download(
         return Err(StatusCode::UNAUTHORIZED);
     }
 
-    let stream = match state.fs.read_stream(&file.path).await {
-        Ok(s) => s,
+    let body = match state.fs.read_stream(&file.path).await {
+        Ok(s) => DownloadStream::new(s, file.id.clone(), state.clone()),
         Err(err) => {
             tracing::error!("{err:?}");
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
-    let body = Body::from_stream(stream);
 
     let mut res = match Response::builder()
         .header(CONTENT_DISPOSITION, content_disposition(&file.path))
@@ -77,13 +76,6 @@ pub async fn download(
     if let Some(mime) = get_mime_type(&file.path) {
         res.headers_mut().insert(header::CONTENT_TYPE, mime);
     }
-
-    // Move to a like proper axum wrapped stream that invokes Drop trait and increments only then
-    // so the entire file would have to be downloaded
-    if let Err(err) = file.increment_download_count(&state.db, None).await {
-        tracing::error!("{err:?}");
-        // just discard the error and continue with the main download anyway
-    };
 
     Ok(res)
 }

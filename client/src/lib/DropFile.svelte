@@ -37,8 +37,6 @@
 				// mhmhm beautiful
 				one_time_id !== undefined ? files[0].name + `?id=${one_time_id}` : path
 			);
-
-			await invalidateAll();
 		}
 	}
 
