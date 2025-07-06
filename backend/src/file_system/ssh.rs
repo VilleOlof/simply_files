@@ -45,9 +45,9 @@ impl SSH {
 
         let mut session = Session::new()?;
         session.set_tcp_stream(tcp);
-        session.set_keepalive(true, 30);
         tracing::debug!("Started SSH handshake");
         session.handshake()?;
+        session.set_keepalive(true, 30);
 
         tracing::debug!("Authenticating SSH");
         if let Some(config) = public_key_config {
