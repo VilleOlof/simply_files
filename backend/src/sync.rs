@@ -25,7 +25,9 @@ async fn sync_from_db(state: &AppState) -> Result<(), SyncError> {
         }
     }
 
-    tracing::info!("Deleted {count} files from the database");
+    if count > 0 {
+        tracing::info!("Deleted {count} files from the database");
+    }
     Ok(())
 }
 

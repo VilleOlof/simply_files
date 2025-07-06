@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
 	import { PUBLIC_BACKEND } from '$env/static/public';
-	import type { FileMetadata } from './file';
 	import { get_good_path } from './format';
 	import Popup from './Popup.svelte';
 	import { notification } from './toast';
@@ -11,17 +10,17 @@
 		file = $bindable()
 	}: {
 		open: boolean;
-		file: FileMetadata;
+		file: { is_dir: boolean; path: string } & Record<string, any>;
 	} = $props();
 
 	let path = $state<string>('');
 	$effect(() => {
-		path = get_good_path(file);
+		path = get_good_path(file.path);
 	});
 
-	async function delete_thing(file: FileMetadata) {
+	async function delete_thing(is_dir: boolean) {
 		let response: Response | undefined = undefined;
-		if (file.is_dir) {
+		if (is_dir) {
 			response = await fetch(`${PUBLIC_BACKEND}/m/directory/${path}`, {
 				method: 'DELETE',
 				credentials: 'include'
@@ -35,10 +34,10 @@
 
 		if (response.ok) {
 			await invalidateAll();
-			notification.success(`${file.is_dir ? 'Directory' : 'File'} deleted successfully`);
+			notification.success(`${is_dir ? 'Directory' : 'File'} deleted successfully`);
 		} else {
 			notification.error(
-				`Failed to delete ${file.is_dir ? 'directory' : 'file'}: ${response.statusText}`
+				`Failed to delete ${is_dir ? 'directory' : 'file'}: ${response.statusText}`
 			);
 		}
 
@@ -72,7 +71,7 @@
 				Cancel
 			</button>
 			<button
-				onclick={() => delete_thing(file)}
+				onclick={() => delete_thing(file.is_dir)}
 				class="bg-background-1 hover:bg-secondary active:bg-primary text-shadow-lg text-shadow-background-1/50 cursor-pointer rounded px-4 py-2 transition-all"
 			>
 				Delete

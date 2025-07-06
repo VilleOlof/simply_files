@@ -1,11 +1,20 @@
 # What address the backend will listen on
 addr = "0.0.0.0:43063"
+
+# Enabling each of these urls enables QR code generation 
+# for files and links separately
+# The extern URL pointing to this server (optional)
+# url = "http://localhost:43063"
+# The extern URL pointing to the web client (optional)
+# web_url = "http://localhost:5173"
 # The path to the SQlite database
 db = "db.sqlite"
 # The token used for login into the main dashboard
 token = "<token>"
+
 # What file system config to use ("ssh" or "local")
 file_system = "local"
+
 # How big files may be when they are being uploaded
 upload_limit = 50_000_000_000 # (50GB)
 # How much space it will allow to be uploaded in total

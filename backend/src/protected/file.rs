@@ -46,6 +46,7 @@ pub async fn rename_file(
 #[derive(Debug, Deserialize)]
 pub struct ChangeAccessQuery {
     pub access: i64,
+    pub id: Option<bool>,
 }
 
 pub async fn change_access(
@@ -54,7 +55,12 @@ pub async fn change_access(
     State(state): State<Arc<AppState>>,
 ) -> Result<StatusCode, SimplyError> {
     let access: FileAccess = query.access.into();
-    let mut file = File::get_via_path(&state.db, &path).await?;
+
+    let mut file = if query.id.unwrap_or(false) {
+        File::get_via_id(&state.db, &path).await?
+    } else {
+        File::get_via_path(&state.db, &path).await?
+    };
 
     file.change_access(&state.db, access).await?;
 

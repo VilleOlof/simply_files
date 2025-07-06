@@ -53,7 +53,7 @@
 	{@render children()}
 
 	<p class=" absolute bottom-0 right-0 m-3">
-		<a href={GITHUB_URL} class="hover:underline">Github</a> | 0.0.0
+		<a href={GITHUB_URL} class="hover:underline">Github</a> | 1.0.0
 	</p>
 
 	<Toaster

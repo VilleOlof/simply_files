@@ -1,4 +1,5 @@
 use std::{
+    env,
     fs::{File, OpenOptions, exists},
     path::PathBuf,
     sync::Arc,
@@ -25,6 +26,7 @@ mod download;
 mod download_stream;
 mod error;
 mod file_system;
+mod preview;
 mod protected;
 mod speed_test;
 mod sync;
@@ -69,6 +71,9 @@ async fn main() {
     let app = Router::new()
         .route("/", get(root))
         .route("/d/{*id}", get(download::download))
+        .route("/qr/file/{*id}", get(download::qr_code))
+        .route("/qr/link/{*id}", get(protected::link::qr_code))
+        .route("/preview_data/{*id}", get(preview::get_preview_data))
         .route("/o/upload/{*name}", post(upload::public::upload))
         .route("/verify_link/{*id}", post(protected::link::verify_link))
         .with_state(state.clone())
@@ -79,12 +84,25 @@ async fn main() {
         .layer(DefaultBodyLimit::max(upload_limit));
 
     let listener = tokio::net::TcpListener::bind(&addr).await.expect(&addr);
+    tracing::info!("Starting server on {addr}");
     axum::serve(listener, app)
         .await
         .expect("Failed to serve app");
 }
 
 fn setup_tracing() {
+    let args = env::args().collect::<Vec<String>>();
+    let log_level_str = args.get(1).map(|s| s.as_str()).unwrap_or("");
+    let log_level = match log_level_str.to_lowercase().as_str() {
+        "off" => LevelFilter::OFF,
+        "trace" => LevelFilter::TRACE,
+        "debug" => LevelFilter::DEBUG,
+        "warn" => LevelFilter::WARN,
+        "info" => LevelFilter::INFO,
+        "error" => LevelFilter::ERROR,
+        _ => LevelFilter::INFO,
+    };
+
     let log_file = OpenOptions::new()
         .create(true)
         .truncate(true)
@@ -97,15 +115,17 @@ fn setup_tracing() {
             tracing_subscriber::fmt::layer()
                 .json()
                 .with_writer(log_file)
-                .with_filter(LevelFilter::TRACE),
+                .with_filter(log_level),
         )
         .with(
             tracing_subscriber::fmt::layer()
                 .compact()
-                .with_filter(LevelFilter::TRACE),
+                .with_filter(log_level),
         );
 
     tracing::subscriber::set_global_default(sub).expect("Failed setting default subscriber");
+
+    tracing::info!("Init tracing with {log_level:?} as the log level");
 }
 
 async fn root() -> &'static str {

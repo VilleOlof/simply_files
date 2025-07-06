@@ -1,45 +1,119 @@
 # simply_files
 
-## TODO
-- [X] Abstract the stream upload handler to be reusable for one-time uploads.
-- [X] Fix all file related endpoints for /m
-- [X] Fix a sqlite DB to sync file ids to their paths & statistics.  
-- [X] One-time links (https://simply.lifelike.dev/u/<link_id>) for file uploads.
-- [X] Proper handler for downloading files (https://simply.lifelike.dev/d/<file_id>)
-- [X] Add privacy toggle (auto make it public when copying link)  
-- [X] Remove directories (only when empty)  
-- [X] toasts on client  
-- [X] fully fix rename (client and sync with db on server)  
-- [X] notify that dir deletions only work on empty directories
-- [X] add checks so a path before going into the file_system is NEVER begins with a /. because we dont wanna delete the root directory or even attempt it.  
-- [X] Fix some page or way to add new one-time links and that stuff
-- [X] Fix UI on one-time upload links  
-- [X] remove unwraps  
-- [X] Auto create Local/SSH root folder on "first run" &  ".public_uploads"
-- [X] Organize client "index.ts"
-- [X]  add storage_limit config & check it on upload  
-- [X] one-time link files always public
-- [X] update modified time on files on change
-- [X] Either upload queue or parallel multi-uploads
-- [X] sync database & real file system on startup  
-- [X] Update so the client speed test adjusts to the current upload speed.   
-- [X] mobile support in css (upload, download, etc)  
-    - [X] +error.svelte
-    - [X] +layout.svelte
-    - [X] +page.svelte
-    - [X] /u/[id]/+page.svelte
-    - [X] /m/+page.svelte
-    - [X] /m/+layout.svelte
-    - [X] /m/[...path]/page.svelte
-    - [X] /m/.public_uploads/+page.svelte
-    - [X] TopStatusBar.svelte
-    - [X] PathNavigator.svelte
-    - [X] Popup.svelte
-    - [X] FileList.svelte
-    - [X] FileHandler.svelte
-    - [X] FileEntry.svelte
-    - [X] Delete.svelte
-    - [X] NewDirectory.svelte
-    - [X] Toast
-- [ ] fresh install for both backend/frontend & document setup  
-- [ ] Github action to build binaries for windows & linux
+File sharing done easily.
+
+## Features
+- One-time links for others to upload files
+- Easy to use interface
+- Secure & fast, backend in Rust
+- Easy to self-host, prebuilt binaries
+- Folders to help you organize
+- QR code generation to easily share
+- Video/image/audio/text file preview
+- No ads, no payment, 100% free
+- Store your files locally or via SFTP
+- No AI bullshit
+
+## Installation
+
+This repository contains 2 parts:
+1. The backend, this exposes an API to interact with the files.  
+2. The client, which is a web interace to interact with the backend.
+
+The backend can run just fine on it's own.
+
+### Backend
+
+You can either clone the repository and build from source (`cargo build -r`)  
+Or download the latest prebuilt binary.  
+
+Before we can run it tho, we will need to configure it so you can access it.
+
+### Configuration
+
+There is an example config file at `backend/config.example.toml`  
+which you can copy to `backend/config.toml` and begin to edit to your liking.  
+
+But we are gonna go through the important parts here.  
+
+#### File System
+
+Currently you can choose to store your files in 2 ways:
+- **Local**  
+    This will store them on the same host as the backend is running on.  
+    The only argument to this is the root directory on where to store the files.  
+    ```toml
+    file_system = "local"
+    [local]
+    root = "/home/user/simply_files/data
+    ```
+- **SFTP**
+    This stores the files on a remote server via SFTP.  
+    You can authenticate via either password or a public key.  
+    ```toml
+    file_system = "ssh"
+    [ssh]
+    host = "example.com"
+    port = 22
+    username = "user"
+
+    # Choose either one
+    [ssh.password]
+    password = "******"
+    # or
+    [ssh.public_key]
+    private_key = "/home/user/.ssh/id_rsa"
+    # These are optional 
+    # passphrase = "******"
+    # public_key = "/home/user/.ssh/id_rsa.pub"
+    ```
+Then you will need to configure the token that you will use to login and manage your files.  
+The backend only controls a single main account.  
+
+```toml
+token = "**********"
+```
+
+All other configs have default values and documentation in the example config file if you want to configure them.  
+
+### Running the backend
+
+After you've setup the configuration.  
+
+```bash
+# Just run the binary
+./simply_files
+
+# You can optionally specify a log level as the first argument
+./simply_files debug
+# [trace, debug, info, warn, error, off] are valid log levels
+```
+
+### Client
+
+The client is an easy to use interface that allows full interaction with the backend.  
+
+> [!NOTE]  
+> The client requires NPM & Node (V20.6+) to be installed.
+
+Start with cloning or downloading the repository.  
+And add a `.env` in the `client` directory with the following content:
+
+```sh
+PUBLIC_BACKEND = "https://backend_url.com"
+```
+
+This URL should point to the backend you configured earlier.  
+In this `.env` you could also specify the `port` & `host`.  
+
+Then run the following:
+
+```bash
+cd client
+# Install dependencies
+npm i
+# Build the client
+npm run build
+# Run the client
+node --env-file=.env build
+```

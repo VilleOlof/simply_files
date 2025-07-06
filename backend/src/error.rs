@@ -81,20 +81,44 @@ impl From<axum::http::Error> for SimplyError {
     }
 }
 
+impl From<qrcode::types::QrError> for SimplyError {
+    fn from(value: qrcode::types::QrError) -> Self {
+        SimplyError {
+            status_code: StatusCode::INTERNAL_SERVER_ERROR,
+            reason: "Failed QRCode operation".into(),
+            err: Some(Box::new(value)),
+        }
+    }
+}
+
+impl From<image::ImageError> for SimplyError {
+    fn from(value: image::ImageError) -> Self {
+        SimplyError {
+            status_code: StatusCode::INTERNAL_SERVER_ERROR,
+            reason: "Failed Image operation".into(),
+            err: Some(Box::new(value)),
+        }
+    }
+}
+
 macro_rules! err {
     ($msg:expr) => {
         return Err(SimplyError::construct(
-            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
             $msg,
             None,
         ))
     };
     ($msg:expr, $code:ident) => {
-        return Err(SimplyError::construct(StatusCode::$code, $msg, None))
+        return Err(SimplyError::construct(
+            axum::http::StatusCode::$code,
+            $msg,
+            None,
+        ))
     };
     ($msg:expr, $code:ident, $err:expr) => {
         return Err(SimplyError::construct(
-            StatusCode::$code,
+            axum::http::StatusCode::$code,
             $msg,
             Some(Box::new($err)),
         ))

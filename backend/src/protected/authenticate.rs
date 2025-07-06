@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use axum::{Json, extract::State, http::StatusCode};
+use axum::{Json, extract::State};
 use axum_extra::extract::{
     CookieJar,
     cookie::{Cookie, SameSite},

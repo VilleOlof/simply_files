@@ -143,6 +143,28 @@
 
 					<button
 						onclick={async () => {
+							await goto(`/d/${file.id}`);
+						}}
+						aria-label="Open file preview"
+						title="Open file preview"
+						class="hover:bg-background-1 cursor-pointer rounded px-1 transition-colors"
+						><svg
+							xmlns="http://www.w3.org/2000/svg"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							class="text-text-2 w-5"
+							><path d="M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6" /><path
+								d="m21 3-9 9"
+							/><path d="M15 3h6v6" /></svg
+						></button
+					>
+
+					<button
+						onclick={async () => {
 							await change_access(file, file.access == 1 ? 0 : 1);
 							await invalidateAll();
 						}}

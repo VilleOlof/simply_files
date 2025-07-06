@@ -1,15 +1,19 @@
-use std::{ffi::OsString, path::PathBuf, sync::Arc};
+use std::{ffi::OsString, io::Cursor, path::PathBuf, sync::Arc};
 
 use axum::{
-    extract::{Path, State},
+    body::Body,
+    extract::{Path, Query, State},
     http::{
-        HeaderMap, HeaderValue, StatusCode,
-        header::{self, CONTENT_DISPOSITION, CONTENT_LENGTH},
+        HeaderMap, HeaderValue,
+        header::{self, CONTENT_DISPOSITION, CONTENT_TYPE, TRANSFER_ENCODING},
     },
-    response::{Response, Result},
+    response::{IntoResponse, Response, Result},
 };
 use axum_extra::extract::CookieJar;
+use image::{ImageFormat, Luma};
 use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
+use qrcode::QrCode;
+use serde::Deserialize;
 
 use crate::{
     AppState,
@@ -18,6 +22,11 @@ use crate::{
     error::{SimplyError, err},
     protected::standalone_auth,
 };
+
+#[derive(Debug, Deserialize)]
+pub struct DownloadQuery {
+    r: Option<String>,
+}
 
 /// The one and only: Download
 /// Any download EVER is through this handler
@@ -30,6 +39,7 @@ pub async fn download(
     jar: CookieJar,
     headers: HeaderMap,
     Path(id): Path<String>,
+    Query(query): Query<DownloadQuery>,
     State(state): State<Arc<AppState>>,
 ) -> Result<Response<DownloadStream>, SimplyError> {
     let file = match File::get_via_id(&state.db, &id).await {
@@ -45,7 +55,7 @@ pub async fn download(
     }
 
     if file.get_access() == FileAccess::Private
-        && !standalone_auth(jar, headers, &state.config.token)
+        && !standalone_auth(&jar, &headers, &state.config.token)
     {
         err!("You can't access this file", UNAUTHORIZED);
     }
@@ -56,9 +66,13 @@ pub async fn download(
     };
 
     let mut res = Response::builder()
-        .header(CONTENT_DISPOSITION, content_disposition(&file.path))
-        .header(CONTENT_LENGTH, file.size)
+        .header(TRANSFER_ENCODING, HeaderValue::from_static("chunked"))
         .body(body)?;
+
+    if query.r.unwrap_or(String::from("nuh_uh")) != "t" {
+        res.headers_mut()
+            .insert(CONTENT_DISPOSITION, content_disposition(&file.path));
+    }
 
     if let Some(mime) = get_mime_type(&file.path) {
         res.headers_mut().insert(header::CONTENT_TYPE, mime);
@@ -92,4 +106,47 @@ fn content_disposition(path: &str) -> HeaderValue {
     .unwrap_or(HeaderValue::from_static(
         "attachment; filename*=UTF-8''unknown",
     ))
+}
+
+pub async fn qr_code(
+    jar: CookieJar,
+    headers: HeaderMap,
+    Path(id): Path<String>,
+    State(state): State<Arc<AppState>>,
+) -> Result<impl IntoResponse, SimplyError> {
+    let backend_url = match &state.config.backend_url {
+        Some(u) => u,
+        None => {
+            err!(
+                "No backend_url provided in config, unable to create QRCode for file",
+                INTERNAL_SERVER_ERROR
+            );
+        }
+    };
+
+    let file = match File::get_via_id(&state.db, &id).await {
+        Ok(f) => f,
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => err!("No file with this id found", NOT_FOUND),
+            _ => return Err(SimplyError::from(err)),
+        },
+    };
+
+    if !state.fs.exists(&file.path).await.unwrap_or(false) {
+        err!("No actual file found", NOT_FOUND);
+    }
+
+    if !standalone_auth(&jar, &headers, &state.config.token) {
+        err!("You can't access this file", UNAUTHORIZED);
+    }
+
+    let code = QrCode::new(format!("{}/d/{}", backend_url, file.id))?;
+    let mut image_bytes: Vec<u8> = Vec::new();
+    code.render::<Luma<u8>>()
+        .build()
+        .write_to(&mut Cursor::new(&mut image_bytes), ImageFormat::Png)?;
+
+    Ok(Response::builder()
+        .header(CONTENT_TYPE, "image/png")
+        .body(Body::from(image_bytes))?)
 }

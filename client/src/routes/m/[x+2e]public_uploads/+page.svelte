@@ -6,8 +6,13 @@
 	import { invalidateAll } from '$app/navigation';
 	import { fuckery_rust_time_to_date } from '$lib/format';
 	import { delete_link, copy_link } from '$lib/link';
+	import { notification } from '$lib/toast';
+	import QrCode from '$lib/QRCode.svelte';
 
 	const { data }: PageProps = $props();
+
+	let qr_open = $state(false);
+	let qr_link_id = $state('');
 </script>
 
 <TopStatusBar file_system={data.file_system} storage_limit={data.storage_limit} />
@@ -48,8 +53,43 @@
 					</button>
 
 					<button
+						onclick={() => {
+							qr_link_id = link.id;
+							qr_open = true;
+						}}
+						class="hover:bg-background-1 cursor-pointer rounded px-1 transition-colors"
+						aria-label="Show QR Code"
+						title="Show QR Code"
+					>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							class="text-text-2 w-5"
+							><rect width="5" height="5" x="3" y="3" rx="1" /><rect
+								width="5"
+								height="5"
+								x="16"
+								y="3"
+								rx="1"
+							/><rect width="5" height="5" x="3" y="16" rx="1" /><path
+								d="M21 16h-3a2 2 0 0 0-2 2v3"
+							/><path d="M21 21v.01" /><path d="M12 7v3a2 2 0 0 1-2 2H7" /><path
+								d="M3 12h.01"
+							/><path d="M12 3h.01" /><path d="M12 16v.01" /><path d="M16 12h1" /><path
+								d="M21 12v.01"
+							/><path d="M12 21v-1" /></svg
+						>
+					</button>
+
+					<button
 						onclick={async () => {
 							copy_link(link);
+							notification.success('Copied link to clipboard');
 						}}
 						aria-label="Copy link"
 						title="Copy link"
@@ -69,7 +109,7 @@
 						></button
 					>
 
-					<div class="w-[1rem] md:w-[3.75rem]"></div>
+					<div class="w-[1rem] md:w-[1.75rem]"></div>
 
 					<p>{link.id}</p>
 				</div>
@@ -85,3 +125,5 @@
 </div>
 
 <FileHandler endpoint={'/m/upload'} />
+
+<QrCode bind:open={qr_open} link_id={qr_link_id} />

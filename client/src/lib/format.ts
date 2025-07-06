@@ -22,9 +22,9 @@ export function clean_path(path: string): string {
     return path;
 }
 
-export const get_good_path = (file: FileMetadata): string => {
+export const get_good_path = (file_path: string): string => {
     let path = clean_path(window.location.pathname);
-    path = path + (path.endsWith('/') ? '' : '/') + file.path;
+    path = path + (path.endsWith('/') ? '' : '/') + file_path;
     if (path.startsWith('/')) path = path.slice(1); // remove leading slash if exists
     return path;
 };

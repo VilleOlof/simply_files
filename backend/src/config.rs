@@ -7,6 +7,8 @@ use crate::file_system::{FileSystem, Local, SSH};
 pub struct Config {
     pub file_system: WhichFileSystem,
     pub addr: String,
+    pub backend_url: Option<String>,
+    pub web_url: Option<String>,
     pub db: String,
     pub token: String,
     pub upload_limit: usize,

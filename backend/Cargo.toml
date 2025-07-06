@@ -1,35 +1,41 @@
 [package]
 name = "backend"
+description = "A simple file sharing service"
 version = "0.1.0"
+authors = ["VilleOlof"]
 edition = "2024"
+license = "MIT"
+repository = "https://github.com/VilleOlof/simply_files"
 
 [dependencies]
 async-trait = "0.1.88"
 tokio = { version = "1.45.1", features = ["full"] }
 tokio-stream = "0.1"
+pin-project-lite = "0.2"
+futures-core = "0.3"
 ssh2 = "0.9"
-toml = "0.8.23"
 serde = { version = "1.0", features = ["derive"] }
 serde_repr = "0.1"
 serde_json = "1.0"
+toml = "0.8.23"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3.0", features = ["json"] }
 axum = { version = "0.8.4", features = ["macros"] }
 tower-http = { version = "0.6.5", features = ["cors", "timeout"] }
 axum-extra = { version = "0.10.1", features = ["cookie"] }
-time = { version = "0.3.41", features = ["serde"] }
+mime_guess = "2.0.5"
+percent-encoding = "2.3.1"
+http-body = "1.0.1"
 rand = "0.9.1"
+time = { version = "0.3.41", features = ["serde"] }
 sqlx = { version = "0.8", features = [
     "runtime-tokio",
     "sqlite",
     "derive",
     "time",
 ] }
-mime_guess = "2.0.5"
-percent-encoding = "2.3.1"
-http-body = "1.0.1"
-pin-project-lite = "0.2"
-futures-core = "0.3"
+qrcode = "0.14.1"
+image = "0.25.6"
 
 [profile.release]
 codegen-units = 1

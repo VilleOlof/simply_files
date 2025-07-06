@@ -24,6 +24,16 @@ export type FileMetadata = {
     access: number,
 }
 
+export type FilePreviewData = {
+    size: number,
+    file_name: string,
+    id: string,
+    created_at: number[],
+    mime_type: string,
+    access: number,
+    path?: string
+}
+
 export type UploadEndpoint = "/m/upload" | "/o/upload";
 
 export function upload_button(one_time: boolean = false) {
@@ -136,7 +146,7 @@ export async function get_files(path: string, token?: string, server?: boolean):
 }
 
 export async function rename_file(file: FileMetadata, new_name: string): Promise<void> {
-    let cleaned = get_good_path(file);
+    let cleaned = get_good_path(file.path);
     let new_path = cleaned.split('/').slice(0, -1).join('/') + '/' + new_name;
     if (new_path.startsWith('/')) new_path = new_path.slice(1); // remove leading slash if exists
 
@@ -151,9 +161,20 @@ export async function rename_file(file: FileMetadata, new_name: string): Promise
 }
 
 export async function change_access(file: FileMetadata, access: number): Promise<void> {
-    let cleaned = get_good_path(file);
+    let cleaned = get_good_path(file.path);
 
     const response = await fetch(`${PUBLIC_BACKEND}/m/access/${cleaned}?access=${access}`, {
+        method: 'POST',
+        credentials: 'include',
+    });
+
+    if (!response.ok) {
+        notification.error(`Failed to change access: ${response.statusText}`);
+    }
+}
+
+export async function change_access_with_id(id: string, access: number): Promise<void> {
+    const response = await fetch(`${PUBLIC_BACKEND}/m/access/${id}?access=${access}&id=true`, {
         method: 'POST',
         credentials: 'include',
     });

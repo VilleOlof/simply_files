@@ -5,7 +5,6 @@ use std::{path::PathBuf, sync::Arc};
 use axum::{
     body::Body,
     extract::{Query, State},
-    http::StatusCode,
     response::Response,
 };
 use serde::Deserialize;

@@ -84,7 +84,6 @@
 <!-- so like if we upload multiple files, this upload_progress will jump
 between all of the current parallel uploads, making the bar go up or down anytime
 so a solution to this would be nice but not until someone complains <3
-(oh and those || <value> are for testing the design :))
 -->
 {#if upload_progress !== null}
 	<div
@@ -93,12 +92,12 @@ so a solution to this would be nice but not until someone complains <3
 	>
 		<div
 			class="bg-primary absolute left-0 top-0 h-full transition-all duration-300"
-			style="width: {upload_progress || 50}%"
+			style="width: {upload_progress}%"
 		></div>
 
 		{#if current_speed !== null}
 			<span class="text-text-1 bg-background-2/60 z-10 h-full px-4 text-sm">
-				{prettyBytes(current_speed || 100_000_000)}/s ~
+				{prettyBytes(current_speed)}/s ~
 			</span>
 		{/if}
 	</div>

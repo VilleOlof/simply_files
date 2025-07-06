@@ -3,7 +3,7 @@ use std::sync::Arc;
 use axum::{
     Router,
     extract::{Request, State},
-    http::{HeaderMap, StatusCode},
+    http::HeaderMap,
     middleware::{Next, from_fn_with_state},
     response::Response,
     routing::{delete, get, post},
@@ -57,7 +57,7 @@ async fn token_auth(
     request: Request,
     next: Next,
 ) -> Result<Response, SimplyError> {
-    match standalone_auth(jar, headers, &state.config.token) {
+    match standalone_auth(&jar, &headers, &state.config.token) {
         true => (),
         false => err!("Invalid token", UNAUTHORIZED),
     };
@@ -68,7 +68,7 @@ async fn token_auth(
 
 /// token can be given via either a cookie (token=<token>)
 /// or via headers (Authorization = Bearer <token>)
-pub fn standalone_auth(jar: CookieJar, headers: HeaderMap, actual_token: &str) -> bool {
+pub fn standalone_auth(jar: &CookieJar, headers: &HeaderMap, actual_token: &str) -> bool {
     let token = match jar.get("token") {
         Some(t) => t.value(),
         None => match headers.get("Authorization") {
