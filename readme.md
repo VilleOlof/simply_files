@@ -57,14 +57,14 @@ Currently you can choose to store your files in 2 ways:
     port = 22
     username = "user"
 
-    # Choose either one
+    # Choose either
     [ssh.password]
     password = "******"
     # or
     [ssh.public_key]
     private_key = "/home/user/.ssh/id_rsa"
     # These are optional 
-    # passphrase = "******"
+    # pass_phrase = "******"
     # public_key = "/home/user/.ssh/id_rsa.pub"
     ```
 Then you will need to configure the token that you will use to login and manage your files.  
@@ -87,6 +87,7 @@ After you've setup the configuration.
 # You can optionally specify a log level as the first argument
 ./simply_files debug
 # [trace, debug, info, warn, error, off] are valid log levels
+# Defaults to `info` if not specified.
 ```
 
 ### Client

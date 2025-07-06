@@ -18,5 +18,6 @@ jobs:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
                 RUSTTARGET: ${{ matrix.target }}
+                TOOLCHAIN_VERSION: "1.90.0"
                 SRC_DIR: "backend"
                 EXTRA_FILES: "readme.md backend/config.example.toml"
