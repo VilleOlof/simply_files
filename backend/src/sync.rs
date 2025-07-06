@@ -1,4 +1,4 @@
-use std::{io, os::windows::fs::MetadataExt, path::PathBuf, pin::Pin, sync::Arc};
+use std::{io, path::PathBuf, pin::Pin, sync::Arc};
 
 use crate::{AppState, db::file::File, generate_id};
 
@@ -144,7 +144,7 @@ async fn visit_dirs_inner(
                     &state,
                     path.to_string_lossy().to_string(),
                     root.clone(),
-                    entry.metadata().await?.file_size() as i64,
+                    entry.metadata().await?.len() as i64,
                 )
                 .await?;
             }
