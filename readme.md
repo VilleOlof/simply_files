@@ -6,7 +6,6 @@ File sharing done easily.
 - One-time links for others to upload files
 - Easy to use interface
 - Secure & fast, backend in Rust
-- Easy to self-host, prebuilt binaries
 - Folders to help you organize
 - QR code generation to easily share
 - Video/image/audio/text file preview
