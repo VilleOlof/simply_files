@@ -111,6 +111,28 @@ export function upload_file(file: File, endpoint: UploadEndpoint, path: string):
         request.onerror = (e) => {
             notification.error(`Upload failed: ${request.status}:${request.statusText}, ${request.readyState}: ${e instanceof Error ? e.message : (e?.target as any)?.status ? (e?.target as any)?.status : 'Unknown error'}`);
             console.error('Upload error:', request.status, request.statusText, JSON.stringify(e, null, 2));
+
+            // temp test
+            (async () => {
+                try {
+                    const res = await fetch(`${PUBLIC_BACKEND}${endpoint}/${path}`, {
+                        method: 'POST',
+                        headers: {
+                            'X-Filename': file.name
+                        },
+                        body: file,
+                        credentials: 'include'
+                    });
+                    if (!res.ok) {
+                        notification.error(`Retry upload failed: ${res.status}:${res.statusText}`);
+                        console.error('Retry upload error:', res.status, res.statusText);
+                    }
+                }
+                catch (e) {
+                    notification.error(`Retry upload failed: ${e instanceof Error ? `${e.message}:${e.stack}` : 'Unknown error'}`);
+                    console.error('Retry upload error:', e);
+                }
+            });
         };
 
         dispatchEvent(new CustomEvent('upload-progress', {
@@ -124,7 +146,12 @@ export function upload_file(file: File, endpoint: UploadEndpoint, path: string):
     }
     catch (e) {
         notification.error(`Failed to upload file: ${e instanceof Error ? e.message : 'Unknown error'}`);
-        console.error('Upload error:', e);
+        if (e instanceof Error) {
+            console.error('Upload error:', e.message, e.stack, e.name, e.cause);
+        }
+        else {
+            console.error('Upload error:', e);
+        }
     }
 }
 
