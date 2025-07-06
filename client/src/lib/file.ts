@@ -61,7 +61,7 @@ export function upload_file(file: File, endpoint: UploadEndpoint, path: string):
 
         request.open('POST', `${PUBLIC_BACKEND}${endpoint}/${path}`);
         request.withCredentials = true;
-        request.setRequestHeader('Content-Type', 'application/octet-stream');
+        // request.setRequestHeader('Content-Type', 'application/octet-stream');
         request.setRequestHeader('X-Filename', file.name);
 
         // store the start time in the request object to access it later
@@ -104,12 +104,13 @@ export function upload_file(file: File, endpoint: UploadEndpoint, path: string):
                 }
             } else {
                 notification.error(`Failed to upload file: ${request.statusText}`);
+                console.error('Upload failed:', request.status, request.statusText);
             }
         }
 
         request.onerror = (e) => {
             notification.error(`Upload failed: ${request.status}:${request.statusText}, ${request.readyState}: ${e instanceof Error ? e.message : (e?.target as any)?.status ? (e?.target as any)?.status : 'Unknown error'}`);
-            console.error('Upload error:', e);
+            console.error('Upload error:', request.status, request.statusText, JSON.stringify(e, null, 2));
         };
 
         dispatchEvent(new CustomEvent('upload-progress', {
