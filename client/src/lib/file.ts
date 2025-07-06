@@ -124,6 +124,7 @@ export function upload_file(file: File, endpoint: UploadEndpoint, path: string):
     }
     catch (e) {
         notification.error(`Failed to upload file: ${e instanceof Error ? e.message : 'Unknown error'}`);
+        console.error('Upload error:', e);
     }
 }
 
