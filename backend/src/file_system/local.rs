@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use std::{
     fmt::Debug,
     io::Result,
-    path::{Path, PathBuf},
+    path::PathBuf,
     pin::Pin,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -26,10 +26,6 @@ impl Local {
         if path == "" {
             return self.root.clone();
         };
-
-        if Path::new(&path).is_absolute() {
-            panic!("A given path should never be absolute");
-        }
 
         let path = self.root.join(path);
         let path = PathBuf::from(path.to_string_lossy().to_string().replace("\\", "/"));

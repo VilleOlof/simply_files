@@ -83,10 +83,6 @@ impl SSH {
             return self.root.clone();
         };
 
-        if Path::new(&path).is_absolute() {
-            panic!("A given path should never be absolute");
-        }
-
         let path = PathBuf::from(&self.root).join(path);
 
         path.to_string_lossy().to_string().replace("\\", "/")
