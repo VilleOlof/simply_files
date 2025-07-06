@@ -14,6 +14,7 @@ pub struct Config {
     pub upload_limit: usize,
     pub storage_limit: usize,
     pub upload_timeout: u64,
+    pub cookie_domain: Option<String>,
 
     pub ssh: Option<SSHConfig>,
     pub local: Option<LocalConfig>,

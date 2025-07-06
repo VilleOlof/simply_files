@@ -24,6 +24,9 @@ storage_limit = 512_000_000_000 # (512GB)
 # The timeout for anyone request being sent to the server (in seconds)
 upload_timeout = 3600 # (1 hour)
 
+# for setting the cookie "domain" field for token sessions (optional)
+# cookie_domain = ".example.com"
+
 [local] # Config for the local file system
 # The root path on where to store the data
 # This path will be created upon start if it doesnt exist

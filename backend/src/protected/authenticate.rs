@@ -34,6 +34,9 @@ pub async fn authenticate(
     cookie.set_expires(expire);
     cookie.set_path("/");
     cookie.set_secure(true);
+    if let Some(domain) = &state.config.cookie_domain {
+        cookie.set_domain(domain.clone());
+    }
     cookie.set_same_site(SameSite::None);
     cookie.set_http_only(true);
 
