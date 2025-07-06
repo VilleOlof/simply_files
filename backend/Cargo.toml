@@ -46,3 +46,4 @@ strip = true
 
 [[bin]]
 name = "simply_files"
+path = "src/main.rs"
