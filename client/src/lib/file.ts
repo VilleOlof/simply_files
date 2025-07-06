@@ -108,7 +108,7 @@ export function upload_file(file: File, endpoint: UploadEndpoint, path: string):
         }
 
         request.onerror = (e) => {
-            notification.error(`Failed to upload file: ${e instanceof Error ? e.message : 'Unknown error'}`);
+            notification.error(`Upload failed: ${request.status}:${request.statusText}, ${request.readyState}: ${e instanceof Error ? e.message : (e?.target as any)?.status ? (e?.target as any)?.status : 'Unknown error'}`);
             console.error('Upload error:', e);
         };
 
