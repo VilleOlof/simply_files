@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
-	import { add_directory, clean_path } from '$lib';
 	import { onMount } from 'svelte';
 	import Popup from './Popup.svelte';
+	import { add_directory } from './directory';
+	import { clean_path } from './format';
 
 	let { open = $bindable() }: { open: boolean } = $props();
 
@@ -50,8 +51,10 @@
 
 <Popup bind:open>
 	<div class="bg-background-3 rounded p-4">
-		<h2>Add new directory</h2>
-		<p class="text-text-1">This will be created based of your current open directory</p>
+		<h2 class="text-balance text-center">Add new directory</h2>
+		<p class="text-text-1 text-balance text-center">
+			This will be created based of your current open directory
+		</p>
 
 		<input
 			type="text"

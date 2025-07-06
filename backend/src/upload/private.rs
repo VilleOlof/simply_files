@@ -10,5 +10,5 @@ pub async fn upload(
     body: Body,
 ) -> Result<Response, SimplyError> {
     let id = generate_id(None);
-    handler_upload(state, &path, &id, body).await
+    handler_upload(&state, &path, &id, body).await
 }

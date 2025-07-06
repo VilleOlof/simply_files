@@ -1,4 +1,6 @@
-import { get_file_system, get_files, get_storage_limit, get_unused_links } from '$lib';
+import { get_files } from '$lib/file';
+import { get_unused_links } from '$lib/link';
+import { get_file_system, get_storage_limit } from '$lib/metadata';
 import { error } from '@sveltejs/kit';
 
 export async function load({ cookies }) {

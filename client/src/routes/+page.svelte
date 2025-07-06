@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { GITHUB_URL, login, logout } from '$lib';
+	import { GITHUB_URL } from '$lib';
+	import { logout, login } from '$lib/auth';
 	import type { PageProps } from './$types';
 
 	let token = $state('');
@@ -8,11 +9,11 @@
 	const { data }: PageProps = $props();
 </script>
 
-<p class="text-2xl">File sharing done easily</p>
+<p class="text-balance text-center text-2xl">File sharing done easily</p>
 
 <div class="mt-4"></div>
 
-<p class="w-1/4 text-balance text-center text-xl">
+<p class="text-balance text-center text-xl md:w-1/2">
 	<a href={GITHUB_URL} class="text-primary drop-shadow-secondary/50 drop-shadow hover:underline"
 		>Simply... Files</a
 	>
@@ -27,10 +28,11 @@
 	<p>- Easy to use interface</p>
 	<p>- Secure & fast, backend in Rust</p>
 	<p>- Easy to self-host, prebuilt binaries</p>
-	<!-- <p>- Folders & tags to help you organize</p> -->
 	<p>- Folders to help you organize</p>
+	<p>- CLI for terminal interaction</p>
 	<p>- No ads, no payment, 100% free</p>
 	<p>- Store your files locally or via SFTP</p>
+	<p>- No AI bullshit</p>
 </div>
 
 <div class="mt-12"></div>
@@ -64,19 +66,24 @@
 			>
 		</div>
 	{:else}
-		<p class="text-xl">Own this instance? Want to log in?</p>
-		<div class="flex flex-col gap-4">
+		<p class="text-balance text-center text-xl">Own this instance? Want to log in?</p>
+		<div class="flex flex-col items-center gap-4">
 			<input
 				bind:value={token}
 				type="password"
 				placeholder="token..."
-				class="bg-background-2 drop-shadow-background-3 drop-shadow-box rounded px-4 py-1 text-xl outline-none"
+				onkeydown={async (e) => {
+					if (e.key === 'Enter') {
+						await login(token);
+					}
+				}}
+				class="bg-background-2 drop-shadow-background-3 drop-shadow-box w-4/5 rounded px-4 py-1 text-xl outline-none sm:w-full"
 			/>
 			<button
 				onclick={async () => {
 					await login(token);
 				}}
-				class="bg-background-2 drop-shadow-background-3 drop-shadow-box hover:bg-secondary active:bg-primary text-shadow-lg text-shadow-background-1/50 cursor-pointer rounded px-4 py-1 text-xl transition-all"
+				class="bg-background-2 drop-shadow-background-3 drop-shadow-box hover:bg-secondary active:bg-primary text-shadow-lg text-shadow-background-1/50 w-4/5 cursor-pointer rounded px-4 py-1 text-xl transition-colors sm:w-full"
 			>
 				Login</button
 			>

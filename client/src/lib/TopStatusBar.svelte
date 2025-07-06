@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
-	import { copy_link, create_link, type FileSystemInfo, type StorageLimit } from '$lib';
 	import prettyBytes from 'pretty-bytes';
+	import { upload_button } from './file';
+	import { create_link, copy_link } from './link';
+	import type { FileSystemInfo, StorageLimit } from './metadata';
 
 	const {
 		file_system,
@@ -11,28 +13,13 @@
 		storage_limit: StorageLimit;
 	} = $props();
 	let storage_percentage = $state((storage_limit.used / storage_limit.max) * 100);
-
-	function upload_button() {
-		const input = document.createElement('input');
-		input.type = 'file';
-		input.multiple = false;
-		input.accept = '*';
-		input.style.display = 'none';
-
-		input.onchange = (e) => {
-			// this moves the job to the DropFile component
-			const files = (e.target as HTMLInputElement).files;
-			dispatchEvent(new CustomEvent('manual-upload', { detail: { files } }));
-		};
-
-		document.body.appendChild(input);
-		input.click();
-		document.body.removeChild(input);
-	}
+	$effect(() => {
+		storage_percentage = (storage_limit.used / storage_limit.max) * 100;
+	});
 </script>
 
 <div
-	class="bg-background-2 drop-shadow-box drop-shadow-background-3 mb-5 flex w-2/3 justify-between gap-3 px-8 py-2 xl:w-1/3"
+	class="bg-background-2 drop-shadow-box drop-shadow-background-3 mb-5 flex w-11/12 flex-wrap justify-center gap-3 rounded px-8 py-2 sm:justify-between md:w-2/3 xl:w-1/3"
 >
 	<div class="flex items-center gap-4">
 		<div class="bg-background-1 relative h-6 w-fit min-w-[8rem] overflow-hidden rounded px-2">
@@ -115,7 +102,7 @@
 		</div>
 
 		<button
-			onclick={upload_button}
+			onclick={() => upload_button(false)}
 			class="bg-background-1 hover:bg-background-3 flex cursor-pointer items-center gap-2 rounded px-2 transition-colors"
 		>
 			<span>

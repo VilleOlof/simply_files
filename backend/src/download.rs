@@ -4,7 +4,7 @@ use axum::{
     extract::{Path, State},
     http::{
         HeaderMap, HeaderValue, StatusCode,
-        header::{self, CONTENT_DISPOSITION, TRANSFER_ENCODING},
+        header::{self, CONTENT_DISPOSITION, CONTENT_LENGTH},
     },
     response::{Response, Result},
 };
@@ -57,7 +57,7 @@ pub async fn download(
 
     let mut res = Response::builder()
         .header(CONTENT_DISPOSITION, content_disposition(&file.path))
-        .header(TRANSFER_ENCODING, HeaderValue::from_static("chunked"))
+        .header(CONTENT_LENGTH, file.size)
         .body(body)?;
 
     if let Some(mime) = get_mime_type(&file.path) {

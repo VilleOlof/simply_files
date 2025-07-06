@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
 	import { PUBLIC_BACKEND } from '$env/static/public';
-	import { get_good_path, type FileMetadata } from '$lib';
+	import type { FileMetadata } from './file';
+	import { get_good_path } from './format';
 	import Popup from './Popup.svelte';
+	import { notification } from './toast';
 
 	let {
 		open = $bindable(),
@@ -33,8 +35,11 @@
 
 		if (response.ok) {
 			await invalidateAll();
+			notification.success(`${file.is_dir ? 'Directory' : 'File'} deleted successfully`);
 		} else {
-			console.error('Failed to delete file:', response.status, response.statusText);
+			notification.error(
+				`Failed to delete ${file.is_dir ? 'directory' : 'file'}: ${response.statusText}`
+			);
 		}
 
 		open = false;
@@ -43,7 +48,7 @@
 
 <Popup bind:open>
 	<div class="bg-background-3 rounded p-4">
-		<h2>Delete this {file.is_dir ? 'Directory' : 'File'}?</h2>
+		<h2 class="text-balance text-center">Delete this {file.is_dir ? 'Directory' : 'File'}?</h2>
 		<p class="text-text-1">
 			This will permanently delete this {file.is_dir ? 'directory' : 'file'}
 		</p>

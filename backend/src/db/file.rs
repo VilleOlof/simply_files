@@ -84,6 +84,7 @@ impl File {
     }
 
     pub async fn get_via_path(db: &SqlitePool, path: &str) -> Result<Self> {
+        tracing::debug!("path: {path:?}");
         Ok(query_as(r#"SELECT * FROM files WHERE path = ?;"#)
             .bind(path)
             .fetch_one(db)
@@ -113,7 +114,7 @@ impl File {
 
     #[tracing::instrument(skip(self, db))]
     pub async fn successful_upload(&mut self, db: &SqlitePool, size: i64) -> Result<()> {
-        query(r#"UPDATE files SET size = ? WHERE id = ? "#)
+        query(r#"UPDATE files SET size = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? "#)
             .bind(size)
             .bind(&self.id)
             .execute(db)
@@ -128,7 +129,7 @@ impl File {
 
     #[tracing::instrument(skip(self, db))]
     pub async fn change_access(&mut self, db: &SqlitePool, access: FileAccess) -> Result<()> {
-        query(r#"UPDATE files SET access = ? WHERE id = ?;"#)
+        query(r#"UPDATE files SET access = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;"#)
             .bind(access.clone() as i64)
             .bind(&self.id)
             .execute(db)
@@ -141,7 +142,7 @@ impl File {
 
     #[tracing::instrument(skip(self, db))]
     pub async fn rename(&mut self, db: &SqlitePool, new_path: &str) -> Result<()> {
-        query(r#"UPDATE files SET path = ? WHERE id = ?;"#)
+        query(r#"UPDATE files SET path = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;"#)
             .bind(new_path)
             .bind(&self.id)
             .execute(db)
@@ -195,5 +196,17 @@ impl File {
         };
 
         Ok(files)
+    }
+
+    #[tracing::instrument(skip(db))]
+    pub async fn get_all_files(db: &SqlitePool) -> Result<Vec<Self>> {
+        Ok(query_as(r#"SELECT * FROM files"#).fetch_all(db).await?)
+    }
+
+    #[tracing::instrument(skip(db))]
+    pub async fn get_total_amount_of_files(db: &SqlitePool) -> Result<i64> {
+        Ok(query_scalar(r#"SELECT COUNT(*) FROM files"#)
+            .fetch_one(db)
+            .await?)
     }
 }

@@ -2,6 +2,7 @@
 	import { afterNavigate, goto, invalidateAll } from '$app/navigation';
 	import { onMount, tick } from 'svelte';
 	import NewDirectory from './NewDirectory.svelte';
+	import { notification } from './toast';
 
 	const { path }: { path: string } = $props();
 
@@ -43,9 +44,10 @@
 	});
 </script>
 
-<div class="mb-5 flex w-2/3 gap-4 xl:w-1/3">
+<div class="mb-5 flex w-11/12 gap-4 md:w-2/3 xl:w-1/3">
 	<button
 		onclick={async () => {
+			if (path_parts.length === 0) return;
 			const parentPath = path_parts.slice(0, -1).join('/');
 			await goto(`/m/${parentPath}`);
 		}}
@@ -65,7 +67,10 @@
 	>
 
 	<button
-		onclick={() => invalidateAll()}
+		onclick={async () => {
+			await invalidateAll();
+			notification.success('Reloaded current directory');
+		}}
 		aria-label="Reload current directory"
 		title="Reload current directory"
 		class="bg-background-2 hover:bg-background-3 drop-shadow-box drop-shadow-background-3 flex cursor-pointer items-center gap-2 rounded p-1 transition-colors"

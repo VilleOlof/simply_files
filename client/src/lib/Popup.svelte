@@ -24,7 +24,7 @@
 	<div
 		class="absolute left-0 top-0 z-50 flex h-full w-full items-center justify-center bg-black/70"
 	>
-		<div class="bg-background-3 rounded p-4">
+		<div class="bg-background-3 w-11/12 rounded p-4 md:w-auto">
 			{@render children()}
 		</div>
 	</div>

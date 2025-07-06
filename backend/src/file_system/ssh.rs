@@ -11,7 +11,10 @@ use std::{
 };
 use tokio_stream::{Stream, StreamExt};
 
-use crate::file_system::{FSStream, FileMetadata, FileSystem};
+use crate::{
+    config::{SSHPassword, SSHPublicKey},
+    file_system::{FSStream, FileMetadata, FileSystem},
+};
 
 pub struct SSH {
     #[allow(unused)]
@@ -31,7 +34,8 @@ impl SSH {
         host: &str,
         port: u16,
         username: &str,
-        password: &str,
+        password_config: &Option<SSHPassword>,
+        public_key_config: &Option<SSHPublicKey>,
         root: impl Into<String>,
     ) -> Result<Self> {
         tracing::debug!("Connecting to remote SSH");
@@ -39,12 +43,24 @@ impl SSH {
         tcp.set_read_timeout(Some(Duration::from_secs(10)))?;
         tcp.set_write_timeout(Some(Duration::from_secs(10)))?;
 
-        let mut session = Session::new().unwrap();
+        let mut session = Session::new()?;
         session.set_tcp_stream(tcp);
         tracing::debug!("Started SSH handshake");
         session.handshake()?;
+
         tracing::debug!("Authenticating SSH");
-        session.userauth_password(username, password)?;
+        if let Some(config) = public_key_config {
+            session.userauth_pubkey_file(
+                username,
+                config.public_key.as_deref(),
+                &config.private_key,
+                config.pass_phrase.as_deref(),
+            )?;
+            tracing::debug!("Authenticated via public_key");
+        } else if let Some(config) = password_config {
+            session.userauth_password(username, &config.password)?;
+            tracing::debug!("Authenticated via password");
+        }
 
         if !session.authenticated() {
             return Err(std::io::Error::new(
@@ -73,7 +89,7 @@ impl SSH {
             panic!("Root paths are not allowed & shouldn't ever happen?")
         }
 
-        path.to_string_lossy().to_string()
+        path.to_string_lossy().to_string().replace("\\", "/")
     }
 }
 

@@ -29,6 +29,7 @@ impl Local {
         };
 
         let path = self.root.join(path);
+        let path = PathBuf::from(path.to_string_lossy().to_string().replace("\\", "/"));
 
         if path.has_root() {
             panic!("Root paths are not allowed & shouldn't ever happen?")
@@ -144,7 +145,7 @@ impl FileSystem for Local {
                 .modified()
                 .unwrap_or(SystemTime::now())
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or(Duration::from_secs(0))
                 .as_secs(),
         })
     }
@@ -155,7 +156,7 @@ impl FileSystem for Local {
         tracing::debug!("{:?}", full_path);
         let entries = task::spawn_blocking(move || -> Result<Vec<FileMetadata>> {
             let mut result = Vec::new();
-            for entry in std::fs::read_dir(full_path)? {
+            for entry in std::fs::read_dir(&full_path)? {
                 let entry = entry?;
                 let metadata = entry.metadata()?;
                 result.push(FileMetadata {
@@ -172,7 +173,7 @@ impl FileSystem for Local {
             Ok(result)
         })
         .await
-        .unwrap(); // unwrap task result (safe here unless panicked)
+        .expect("list dir task panic'd?");
 
         entries
     }

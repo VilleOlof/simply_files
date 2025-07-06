@@ -12,7 +12,10 @@ use serde::Deserialize;
 
 use crate::{
     AppState,
-    db::links::FileLink,
+    db::{
+        file::{File, FileAccess},
+        links::FileLink,
+    },
     error::{SimplyError, err},
     generate_id,
     upload::handler_upload,
@@ -24,6 +27,7 @@ pub struct UploadQuery {
 }
 
 // https://simply-backend.lifelike.dev/o/upload/2025-05-23%2024-52.mkv?id=bo4WvY1JKl
+#[axum::debug_handler]
 pub async fn upload(
     State(state): State<Arc<AppState>>,
     Query(query): Query<UploadQuery>,
@@ -49,10 +53,21 @@ pub async fn upload(
 
     let linked_path = PathBuf::from(".public_uploads").join(&name);
 
-    // we mark the link as uploaded via this id before it has been uploaded
-    // so we would want to preferebly do some Drop trait magic to do this after
     let id = generate_id(None);
-    link.uploaded_with(&state.db, &id).await?;
 
-    handler_upload(state, &linked_path.to_string_lossy().to_string(), &id, body).await
+    let response = handler_upload(
+        &state,
+        &linked_path.to_string_lossy().to_string(),
+        &id,
+        body,
+    )
+    .await?;
+
+    // sucess
+    link.uploaded_with(&state.db, &id).await?;
+    // always change one-time "public" uploads to well, Public
+    let mut file = File::get_via_id(&state.db, &id).await?;
+    file.change_access(&state.db, FileAccess::Public).await?;
+
+    Ok(response)
 }

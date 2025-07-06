@@ -42,14 +42,19 @@ async fn upload_via_stream(
 }
 
 pub async fn handler_upload(
-    state: Arc<AppState>,
+    state: &Arc<AppState>,
     path: &str,
     id: &str,
     body: Body,
 ) -> Result<Response, SimplyError> {
+    let bytes_stored = File::get_bytes_stored(&state.db).await?;
+    if bytes_stored > state.config.storage_limit as u64 {
+        err!("Storage limit reached", INSUFFICIENT_STORAGE);
+    }
+
     let mut file = match File::new(&state.db, &id, &path).await {
         Err(err) => {
-            clean_up(state, &id, &path).await?;
+            clean_up(&state, &id, &path).await?;
             err!("Failed to create file entry", INTERNAL_SERVER_ERROR, err);
         }
         Ok(f) => f,
@@ -60,7 +65,7 @@ pub async fn handler_upload(
         Ok(_) => (),
         Err(err) => {
             // if the upload_stream fails, we need to backtrack to not get loose files
-            clean_up(state, &id, &path).await?;
+            clean_up(&state, &id, &path).await?;
             err!("Failed upload via streaming", INTERNAL_SERVER_ERROR, err);
         }
     };
@@ -88,7 +93,7 @@ fn path_is_valid(path: impl AsRef<std::path::Path>) -> bool {
     return true;
 }
 
-async fn clean_up(state: Arc<AppState>, id: &str, path: &str) -> Result<(), SimplyError> {
+async fn clean_up(state: &Arc<AppState>, id: &str, path: &str) -> Result<(), SimplyError> {
     File::delete(&state.db, &id).await?;
 
     if state.fs.exists(&path).await? {

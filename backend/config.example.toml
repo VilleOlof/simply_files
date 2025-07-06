@@ -1,0 +1,40 @@
+# What address the backend will listen on
+addr = "0.0.0.0:43063"
+# The path to the SQlite database
+db = "db.sqlite"
+# The token used for login into the main dashboard
+token = "<token>"
+# What file system config to use ("ssh" or "local")
+file_system = "local"
+# How big files may be when they are being uploaded
+upload_limit = 50_000_000_000 # (50GB)
+# How much space it will allow to be uploaded in total
+# (This check only occurs after files have been fully uploaded,
+#  so the "real" storage limit is `storage_limit` + `upload_limit`)
+storage_limit = 512_000_000_000 # (512GB)
+# The timeout for anyone request being sent to the server (in seconds)
+upload_timeout = 3600 # (1 hour)
+
+[local] # Config for the local file system
+# The root path on where to store the data
+# This path will be created upon start if it doesnt exist
+root = "./data"
+
+[ssh] # Config for the SSH/SFTP file system
+# SSH credentials
+host = "<host>"
+port = 22
+username = "<username>"
+# Where on the extern server to store the files
+# This path will be created upon start if it doesnt exist
+root = "/home/<user>/simply_files"
+
+# SSH credentials for password
+[ssh.password]
+password = "<password>"
+# SSH credentials for public key/private key
+[ssh.public_key]
+private_key = "<path>"
+# Optional
+# public_key = "<path>"
+# pass_phrase = "<pass_phrase>"

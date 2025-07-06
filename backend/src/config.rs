@@ -10,6 +10,7 @@ pub struct Config {
     pub db: String,
     pub token: String,
     pub upload_limit: usize,
+    pub storage_limit: usize,
     pub upload_timeout: u64,
 
     pub ssh: Option<SSHConfig>,
@@ -29,8 +30,22 @@ pub struct SSHConfig {
     pub host: String,
     pub port: u16,
     pub username: String,
-    pub password: String,
     pub root: String,
+
+    pub password: Option<SSHPassword>,
+    pub public_key: Option<SSHPublicKey>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SSHPassword {
+    pub password: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SSHPublicKey {
+    pub public_key: Option<PathBuf>,
+    pub private_key: PathBuf,
+    pub pass_phrase: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -80,9 +95,10 @@ impl Config {
                         sub_config.port,
                         &sub_config.username,
                         &sub_config.password,
+                        &sub_config.public_key,
                         &sub_config.root,
                     )
-                    .unwrap(),
+                    .expect("Failed to connect to SSH host"),
                 )
             }
         }

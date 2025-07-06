@@ -63,6 +63,10 @@ impl ClientFile {
                     continue;
                 }
             };
+            // file is still uploading (or something is wrong)
+            if db.size == 0 {
+                continue;
+            }
 
             files.push(ClientFile {
                 path: real.path.clone(),

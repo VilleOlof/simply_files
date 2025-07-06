@@ -1,5 +1,5 @@
 <script lang="ts">
-	import DropFile from '$lib/DropFile.svelte';
+	import FileHandler from '$lib/FileHandler.svelte';
 	import type { PageProps } from './$types';
 	import TopStatusBar from '$lib/TopStatusBar.svelte';
 	import FileList from '$lib/FileList.svelte';
@@ -11,4 +11,4 @@
 
 <FileList files={data.files} path={data.path} />
 
-<DropFile endpoint={'/m/upload'} />
+<FileHandler endpoint={'/m/upload'} />

@@ -1,5 +1,5 @@
 use std::{
-    fs::{File, exists},
+    fs::{File, OpenOptions, exists},
     path::PathBuf,
     sync::Arc,
     time::Duration,
@@ -12,8 +12,8 @@ use axum::{
 };
 use sqlx::{SqlitePool, pool::PoolOptions};
 use tower_http::{cors::CorsLayer, timeout::TimeoutLayer};
-use tracing::Level;
-use tracing_subscriber::FmtSubscriber;
+use tracing::level_filters::LevelFilter;
+use tracing_subscriber::{Layer, Registry, layer::SubscriberExt};
 
 use crate::{
     config::Config, file_system::FileSystem, protected::protected_routes, speed_test::speed_test,
@@ -27,6 +27,7 @@ mod error;
 mod file_system;
 mod protected;
 mod speed_test;
+mod sync;
 mod upload;
 
 #[derive(Debug)]
@@ -51,12 +52,19 @@ async fn main() {
         panic!("Failed to create base folders, can't continue: {err:?}");
     }
 
-    let db = PoolOptions::new().connect(&config.db).await.unwrap();
+    let db = PoolOptions::new()
+        .connect(&config.db)
+        .await
+        .expect("Failed to connect to database");
     db::init(&db).await.expect("Failed to init database tables");
 
     let addr = config.addr.clone(); // just so it lives long enough
     let (upload_limit, upload_timeout) = (config.upload_limit, config.upload_timeout);
     let state = Arc::new(AppState { config, fs, db });
+
+    if let Err(err) = sync::sync_files(state.clone()).await {
+        tracing::error!("Failed syncing database with the file system: {err:?}");
+    };
 
     let app = Router::new()
         .route("/", get(root))
@@ -71,13 +79,32 @@ async fn main() {
         .layer(DefaultBodyLimit::max(upload_limit));
 
     let listener = tokio::net::TcpListener::bind(&addr).await.expect(&addr);
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app)
+        .await
+        .expect("Failed to serve app");
 }
 
 fn setup_tracing() {
-    let sub = FmtSubscriber::builder()
-        .with_max_level(Level::TRACE)
-        .finish();
+    let log_file = OpenOptions::new()
+        .create(true)
+        .truncate(true)
+        .write(true)
+        .open("out.log")
+        .expect("Failed to create log file");
+
+    let sub = Registry::default()
+        .with(
+            tracing_subscriber::fmt::layer()
+                .json()
+                .with_writer(log_file)
+                .with_filter(LevelFilter::TRACE),
+        )
+        .with(
+            tracing_subscriber::fmt::layer()
+                .compact()
+                .with_filter(LevelFilter::TRACE),
+        );
+
     tracing::subscriber::set_global_default(sub).expect("Failed setting default subscriber");
 }
 
