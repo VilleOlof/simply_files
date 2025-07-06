@@ -24,8 +24,19 @@ The backend can run just fine on it's own.
 
 ### Backend
 
-You can either clone the repository and build from source (`cargo build -r`)  
-Or download the latest prebuilt binary.  
+> [!NOTE]  
+> The backend requires Rust (V1.85+, 2024 edition) to be installed.  
+> You can install it via [rustup](https://rustup.rs/).  
+
+Begin with cloning or downloading the repository.  
+Then navigate to the `backend` directory and run the following command to build it:
+
+```bash
+cd backend
+
+cargo build --release
+# binary can then be located at `target/release/simply_files`
+```
 
 Before we can run it tho, we will need to configure it so you can access it.
 
@@ -95,7 +106,8 @@ After you've setup the configuration.
 The client is an easy to use interface that allows full interaction with the backend.  
 
 > [!NOTE]  
-> The client requires NPM & Node (V20.6+) to be installed.
+> The client requires NPM & Node (V20.6+) to be installed.  
+> You can install it [here](https://nodejs.org/en/download)  
 
 Start with cloning or downloading the repository.  
 And add a `.env` in the `client` directory with the following content:

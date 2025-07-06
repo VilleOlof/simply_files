@@ -27,7 +27,6 @@
 	<p>- One-time links for others to upload files</p>
 	<p>- Easy to use interface</p>
 	<p>- Secure & fast, backend in Rust</p>
-	<p>- Easy to self-host, prebuilt binaries</p>
 	<p>- Folders to help you organize</p>
 	<p>- QR code generation to easily share</p>
 	<p>- Video/image/audio/text file preview</p>
