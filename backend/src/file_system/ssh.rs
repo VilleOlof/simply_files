@@ -40,11 +40,12 @@ impl SSH {
     ) -> Result<Self> {
         tracing::debug!("Connecting to remote SSH");
         let tcp = TcpStream::connect((host, port))?;
-        tcp.set_read_timeout(Some(Duration::from_secs(10)))?;
-        tcp.set_write_timeout(Some(Duration::from_secs(10)))?;
+        tcp.set_read_timeout(None)?;
+        tcp.set_write_timeout(None)?;
 
         let mut session = Session::new()?;
         session.set_tcp_stream(tcp);
+        session.set_keepalive(true, 30);
         tracing::debug!("Started SSH handshake");
         session.handshake()?;
 
