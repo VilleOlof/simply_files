@@ -47,11 +47,12 @@ export function upload_button(one_time: boolean = false) {
         // this moves the job to the DropFile component
         const files = (e.target as HTMLInputElement).files;
         dispatchEvent(new CustomEvent('manual-upload', { detail: { files } }));
+
+        document.body.removeChild(input); // remove the input after use
     };
 
     document.body.appendChild(input);
     input.click();
-    document.body.removeChild(input);
 }
 
 export function upload_file(file: File, endpoint: UploadEndpoint, path: string): void {
@@ -105,6 +106,11 @@ export function upload_file(file: File, endpoint: UploadEndpoint, path: string):
                 notification.error(`Failed to upload file: ${request.statusText}`);
             }
         }
+
+        request.onerror = (e) => {
+            notification.error(`Failed to upload file: ${e instanceof Error ? e.message : 'Unknown error'}`);
+            console.error('Upload error:', e);
+        };
 
         dispatchEvent(new CustomEvent('upload-progress', {
             detail: {
