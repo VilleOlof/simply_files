@@ -55,6 +55,11 @@ export function upload_button(one_time: boolean = false) {
     input.click();
 }
 
+function sanitize_file_name(file_name: string): string {
+    // Remove any characters that are not alphanumeric, spaces, or underscores
+    return file_name.replace(/[^a-zA-Z0-9 _-]/g, '').trim();
+}
+
 export function upload_file(file: File, endpoint: UploadEndpoint, path: string): void {
     try {
         let request = new XMLHttpRequest();
@@ -62,7 +67,7 @@ export function upload_file(file: File, endpoint: UploadEndpoint, path: string):
         request.open('POST', `${PUBLIC_BACKEND}${endpoint}/${path}`);
         request.withCredentials = true;
         // request.setRequestHeader('Content-Type', 'application/octet-stream');
-        request.setRequestHeader('X-Filename', file.name);
+        request.setRequestHeader('X-Filename', sanitize_file_name(file.name));
 
         // store the start time in the request object to access it later
         (request.upload as any).start_time = Date.now();
@@ -113,26 +118,27 @@ export function upload_file(file: File, endpoint: UploadEndpoint, path: string):
             console.error('Upload error:', request.status, request.statusText, JSON.stringify(e, null, 2));
 
             // temp test
-            (async () => {
-                try {
-                    const res = await fetch(`${PUBLIC_BACKEND}${endpoint}/${path}`, {
-                        method: 'POST',
-                        headers: {
-                            'X-Filename': file.name
-                        },
-                        body: file,
-                        credentials: 'include'
-                    });
-                    if (!res.ok) {
-                        notification.error(`Retry upload failed: ${res.status}:${res.statusText}`);
-                        console.error('Retry upload error:', res.status, res.statusText);
-                    }
-                }
-                catch (e) {
-                    notification.error(`Retry upload failed: ${e instanceof Error ? `${e.message}:${e.stack}` : 'Unknown error'}`);
-                    console.error('Retry upload error:', e);
-                }
-            });
+            // (async () => {
+            //     try {
+            //         console.log('Retrying upload...');
+            //         const res = await fetch(`${PUBLIC_BACKEND}${endpoint}/${path}`, {
+            //             method: 'POST',
+            //             headers: {
+            //                 'X-Filename': file.name
+            //             },
+            //             body: file,
+            //             credentials: 'include'
+            //         });
+            //         if (!res.ok) {
+            //             notification.error(`Retry upload failed: ${res.status}:${res.statusText}`);
+            //             console.error('Retry upload error:', res.status, res.statusText);
+            //         }
+            //     }
+            //     catch (e) {
+            //         notification.error(`Retry upload failed: ${e instanceof Error ? `${e.message}:${e.stack}` : 'Unknown error'}`);
+            //         console.error('Retry upload error:', e);
+            //     }
+            // });
         };
 
         dispatchEvent(new CustomEvent('upload-progress', {
