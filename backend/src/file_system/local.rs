@@ -2,7 +2,6 @@ use async_trait::async_trait;
 use std::{
     fmt::Debug,
     io::Result,
-    os::windows::fs::MetadataExt,
     path::PathBuf,
     pin::Pin,
     time::{Duration, SystemTime, UNIX_EPOCH},
@@ -140,7 +139,7 @@ impl FileSystem for Local {
         Ok(FileMetadata {
             path: full_path.to_string_lossy().to_string(),
             is_dir: stat.is_dir(),
-            size: stat.file_size(),
+            size: stat.len(),
             modified: stat
                 .modified()
                 .unwrap_or(SystemTime::now())

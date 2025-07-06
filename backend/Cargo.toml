@@ -43,3 +43,6 @@ lto = true
 opt-level = 3
 panic = "abort"
 strip = true
+
+[[bin]]
+name = "simply_files"
