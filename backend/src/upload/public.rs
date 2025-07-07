@@ -3,8 +3,7 @@
 use std::{path::PathBuf, sync::Arc};
 
 use axum::{
-    body::Body,
-    extract::{Query, State},
+    extract::{Multipart, Query, State},
     response::Response,
 };
 use serde::Deserialize;
@@ -31,7 +30,7 @@ pub async fn upload(
     State(state): State<Arc<AppState>>,
     Query(query): Query<UploadQuery>,
     axum::extract::Path(name): axum::extract::Path<String>,
-    body: Body,
+    multipart: Multipart,
 ) -> Result<Response, SimplyError> {
     tracing::trace!("Starting public file upload");
     let link = match FileLink::get_via_id(&state.db, &query.id).await {
@@ -61,7 +60,7 @@ pub async fn upload(
         &state,
         &linked_path.to_string_lossy().to_string(),
         &id,
-        body,
+        multipart,
     )
     .await?;
 

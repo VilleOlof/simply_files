@@ -2,6 +2,7 @@ mod local;
 mod ssh;
 
 use async_trait::async_trait;
+use axum::extract::multipart::Field;
 use serde::Serialize;
 use std::{fmt::Debug, io::Result, path::PathBuf};
 
@@ -18,7 +19,7 @@ pub trait FileSystem: Send + Sync + Debug {
     async fn read(&self, path: &str) -> Result<Vec<u8>>;
     async fn read_stream(&self, path: &str) -> Result<FSStream>;
     async fn write(&self, path: &str, data: &[u8]) -> Result<()>;
-    async fn write_stream(&self, path: &str, stream: FSStream) -> Result<()>;
+    async fn write_stream<'a>(&self, path: &str, stream: Field<'a>) -> Result<()>;
     async fn delete(&self, path: &str) -> Result<()>;
     async fn exists(&self, path: &str) -> Result<bool>;
     async fn metadata(&self, path: &str) -> Result<FileMetadata>;

@@ -125,6 +125,12 @@ fn setup_tracing() {
 
     tracing::subscriber::set_global_default(sub).expect("Failed setting default subscriber");
 
+    if cfg!(debug_assertions) && log_level_str.is_empty() {
+        tracing::info!(
+            "You seem to be running in debug mode and specified no log level. You can specify a log level with `cargo r -- trace` for example."
+        );
+    }
+
     tracing::info!("Init tracing with {log_level:?} as the log level");
 }
 

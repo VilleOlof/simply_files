@@ -16,9 +16,12 @@
 
 	let latest_qr_url: string | undefined = $state(undefined);
 	async function get_qr_image(id: string): Promise<string> {
-		const response = await fetch(`${PUBLIC_BACKEND}/qr/${link_id ? 'link' : 'file'}/${id}`, {
-			credentials: 'include'
-		});
+		const response = await fetch(
+			`${PUBLIC_BACKEND}/qr/${link_id ? 'link' : 'file'}/${id}${file_id ? '?preview_link=true' : ''}`,
+			{
+				credentials: 'include'
+			}
+		);
 		if (!response.ok) {
 			throw new Error('Failed to fetch QR code image');
 		}

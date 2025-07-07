@@ -1,16 +1,16 @@
 use async_trait::async_trait;
+use axum::extract::multipart::Field;
 use ssh2::Session;
 use std::{
     fmt::Debug,
     io::{Read, Result, Write},
     net::TcpStream,
     path::{Path, PathBuf},
-    pin::Pin,
     sync::Arc,
     time::Duration,
 };
 use tokio::sync::Mutex;
-use tokio_stream::{Stream, StreamExt};
+use tokio_stream::StreamExt;
 
 use crate::{
     config::{SSHPassword, SSHPublicKey},
@@ -178,19 +178,15 @@ impl FileSystem for SSH {
     }
 
     #[tracing::instrument(skip(stream))]
-    async fn write_stream(
-        &self,
-        path: &str,
-        mut stream: Pin<Box<dyn Stream<Item = Result<Vec<u8>>> + Send>>,
-    ) -> Result<()> {
+    async fn write_stream<'a>(&self, path: &str, mut stream: Field<'a>) -> Result<()> {
         let full_path = self.full_path(path);
         tracing::debug!("Streaming to {:?}", full_path);
         let mut file = self.sftp.create(Path::new(&full_path))?;
 
-        while let Some(chunk_result) = stream.next().await {
-            let chunk = chunk_result?;
-            file.write_all(&chunk)?;
+        while let Some(Ok(bytes)) = stream.next().await {
+            file.write_all(&bytes)?;
         }
+        tracing::trace!("Exited stream.next() for ssh writing");
 
         Ok(())
     }

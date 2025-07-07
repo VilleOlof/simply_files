@@ -16,11 +16,10 @@ futures-core = "0.3"
 ssh2 = "0.9"
 serde = { version = "1.0", features = ["derive"] }
 serde_repr = "0.1"
-serde_json = "1.0"
 toml = "0.8.23"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3.0", features = ["json"] }
-axum = { version = "0.8.4", features = ["macros"] }
+axum = { version = "0.8.4", features = ["macros", "multipart"] }
 tower-http = { version = "0.6.5", features = ["cors", "timeout"] }
 axum-extra = { version = "0.10.1", features = ["cookie"] }
 mime_guess = "2.0.5"

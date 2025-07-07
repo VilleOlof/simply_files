@@ -4,8 +4,8 @@
 	import { fuckery_rust_time_to_date } from '$lib/format';
 	import { notification } from '$lib/toast';
 	import QrCode from '$lib/QRCode.svelte';
-	import { goto, invalidateAll } from '$app/navigation';
-	import { change_access_with_id } from '$lib/file';
+	import { invalidateAll } from '$app/navigation';
+	import { change_access_with_id, get_preview_link } from '$lib/file';
 	import { browser } from '$app/environment';
 
 	const { data }: PageProps = $props();
@@ -18,6 +18,7 @@
 	<title>{data.meta.file_name}</title>
 	<meta property="og:type" content="website" />
 	<meta property="og:title" content={data.meta.file_name} />
+	<meta property="og:description" content="Download, view or share" />
 	{#if data.meta.mime_type.startsWith('video')}
 		<meta property="og:video" content={data.url} />
 		<meta property="og:video:type" content={data.meta.mime_type} />
@@ -104,7 +105,7 @@
 		<div class="flex flex-wrap gap-1">
 			<button
 				onclick={async () => {
-					await navigator.clipboard.writeText(data.raw_url);
+					await navigator.clipboard.writeText(get_preview_link(data.id));
 
 					// force enable public access
 					if (data.has_token && data.meta.access == 0) {
@@ -112,10 +113,10 @@
 						await invalidateAll();
 					}
 
-					notification.success('Copied link to clipboard');
+					notification.success('Copied preview link to clipboard');
 				}}
-				aria-label="Copy download link"
-				title="Copy download link"
+				aria-label="Copy preview link"
+				title="Copy preview link"
 				class="bg-background-1 text-text-2 hover:text-text h-full cursor-pointer rounded p-1 transition-colors"
 			>
 				<svg
@@ -132,6 +133,38 @@
 					/></svg
 				>
 			</button>
+
+			<button
+				onclick={async () => {
+					await navigator.clipboard.writeText(data.raw_url);
+
+					// force enable public access
+					if (data.has_token && data.meta.access == 0) {
+						await change_access_with_id(data.meta.id, 1);
+						await invalidateAll();
+					}
+
+					notification.success('Copied download link to clipboard');
+				}}
+				aria-label="Copy download link"
+				title="Copy download link"
+				class="bg-background-1 text-text-2 hover:text-text h-full cursor-pointer rounded p-1 transition-colors"
+			>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					class="w-7"
+					><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path
+						d="M14 2v4a2 2 0 0 0 2 2h4"
+					/></svg
+				>
+			</button>
+
 			<button
 				onclick={() => {
 					qr_dialog_open = true;
@@ -209,7 +242,8 @@
 			<div class="flex flex-wrap gap-1">
 				<button
 					onclick={async () => {
-						await goto('/m');
+						history.back();
+						await invalidateAll();
 					}}
 					aria-label="Go back"
 					title="Go back"

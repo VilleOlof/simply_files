@@ -1,17 +1,16 @@
 use axum::Json;
-use axum::body::BodyDataStream;
+use axum::extract::Multipart;
+use axum::extract::multipart::Field;
 use axum::response::IntoResponse;
-use axum::{body::Body, http::StatusCode, response::Response};
+use axum::{http::StatusCode, response::Response};
+
 use std::path::Path;
+
 use std::sync::Arc;
-use tokio_stream::StreamExt;
 
 use crate::db::file::File;
 use crate::error::{SimplyError, err};
-use crate::{
-    AppState,
-    file_system::{FSStream, FileSystem},
-};
+use crate::{AppState, file_system::FileSystem};
 
 pub mod private;
 pub mod public;
@@ -19,7 +18,7 @@ pub mod public;
 /// Main function for streaming files from a client to the given file system
 async fn upload_via_stream(
     fs: &Box<dyn FileSystem>,
-    stream: BodyDataStream,
+    stream: Field<'_>,
     path: impl AsRef<Path>,
 ) -> std::io::Result<()> {
     use std::io::{Error, ErrorKind};
@@ -31,25 +30,17 @@ async fn upload_via_stream(
         return Err(Error::new(ErrorKind::Other, "Path is invalid"));
     }
 
-    tracing::trace!("Mapping body_stream into byte_stream");
-    let byte_stream = stream.map(|frame_result| {
-        frame_result
-            .map(|frame| frame.to_vec())
-            .map_err(|e| Error::new(ErrorKind::Other, e))
-    });
-    let pinned_stream: FSStream = Box::pin(byte_stream);
-
     tracing::trace!("Starting stream write to file_system");
-    fs.write_stream(&path.as_ref().to_string_lossy(), pinned_stream)
+    fs.write_stream(&path.as_ref().to_string_lossy(), stream)
         .await
 }
 
-#[tracing::instrument(skip(state, body))]
+#[tracing::instrument(skip(state, multipart))]
 pub async fn handler_upload(
     state: &Arc<AppState>,
     path: &str,
     id: &str,
-    body: Body,
+    mut multipart: Multipart,
 ) -> Result<Response, SimplyError> {
     tracing::trace!("Checking if theres available storage");
     let bytes_stored = File::get_bytes_stored(&state.db).await?;
@@ -66,16 +57,20 @@ pub async fn handler_upload(
         Ok(f) => f,
     };
 
-    tracing::trace!("Convert body into data stream");
-    let data_stream = body.into_data_stream();
-    match upload_via_stream(&state.fs, data_stream, &path).await {
+    match {
+        if let Some(field) = multipart.next_field().await? {
+            upload_via_stream(&state.fs, field, &path).await?;
+        }
+
+        Ok::<(), SimplyError>(())
+    } {
         Ok(_) => (),
         Err(err) => {
             // if the upload_stream fails, we need to backtrack to not get loose files
             clean_up(&state, &id, &path).await?;
             err!("Failed upload via streaming", INTERNAL_SERVER_ERROR, err);
         }
-    };
+    }
 
     let metadata = state.fs.metadata(&path).await?;
     file.successful_upload(&state.db, metadata.size as i64)

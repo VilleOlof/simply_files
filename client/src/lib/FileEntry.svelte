@@ -2,8 +2,15 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import prettyBytes from 'pretty-bytes';
 	import { notification } from './toast';
-	import { type FileMetadata, rename_file, get_download_link, change_access } from './file';
+	import {
+		type FileMetadata,
+		rename_file,
+		get_download_link,
+		change_access,
+		get_preview_link
+	} from './file';
 	import { format_path } from './format';
+	import { onMount } from 'svelte';
 
 	const { file }: { file: FileMetadata } = $props();
 	const date = new Date(file.modified * 1000);
@@ -37,6 +44,28 @@
 		stop_top_level_click = true;
 		dispatchEvent(new CustomEvent('custom-delete-thing', { detail: { file } }));
 	}
+
+	let shift_pressed = $state(false);
+	function handle_shift(event: KeyboardEvent) {
+		if (event.shiftKey) {
+			shift_pressed = true;
+		} else {
+			shift_pressed = false;
+		}
+	}
+
+	onMount(() => {
+		document.addEventListener('keydown', handle_shift);
+		document.addEventListener('keyup', handle_shift);
+		return () => {
+			document.removeEventListener('keydown', handle_shift);
+			document.removeEventListener('keyup', handle_shift);
+
+			if (debounce_timeout) {
+				clearTimeout(debounce_timeout);
+			}
+		};
+	});
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -113,7 +142,7 @@
 
 					<button
 						onclick={async () => {
-							const link = get_download_link(file.id);
+							const link = shift_pressed ? get_download_link(file.id) : get_preview_link(file.id);
 							// force enable public access
 							if (file.access == 0) {
 								await change_access(file, 1);
@@ -121,10 +150,12 @@
 							}
 
 							navigator.clipboard.writeText(link);
-							notification.success('Copied link to clipboard');
+							notification.success(
+								`Copied ${shift_pressed ? 'download' : 'preview'} link to clipboard`
+							);
 						}}
-						aria-label="Copy download link"
-						title="Copy download link"
+						aria-label="Copy {shift_pressed ? 'download' : 'preview'} link"
+						title="Copy {shift_pressed ? 'download' : 'preview'} link"
 						class="hover:bg-background-1 cursor-pointer rounded px-1 transition-colors"
 						><svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -134,7 +165,9 @@
 							stroke-width="2"
 							stroke-linecap="round"
 							stroke-linejoin="round"
-							class="text-text-2 w-5"
+							class:text-text={shift_pressed}
+							class:text-text-2={!shift_pressed}
+							class=" w-5"
 							><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path
 								d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
 							/></svg

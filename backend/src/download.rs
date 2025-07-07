@@ -108,19 +108,37 @@ fn content_disposition(path: &str) -> HeaderValue {
     ))
 }
 
+#[derive(Debug, Deserialize)]
+pub struct QrCodeQuery {
+    pub preview_link: Option<bool>,
+}
+
 pub async fn qr_code(
     jar: CookieJar,
     headers: HeaderMap,
     Path(id): Path<String>,
+    Query(query): Query<QrCodeQuery>,
     State(state): State<Arc<AppState>>,
 ) -> Result<impl IntoResponse, SimplyError> {
-    let backend_url = match &state.config.backend_url {
-        Some(u) => u,
-        None => {
-            err!(
-                "No backend_url provided in config, unable to create QRCode for file",
-                INTERNAL_SERVER_ERROR
-            );
+    let url = if query.preview_link.unwrap_or(false) {
+        match &state.config.web_url {
+            Some(u) => u,
+            None => {
+                err!(
+                    "No web_url provided in config, unable to create QRCode for file",
+                    INTERNAL_SERVER_ERROR
+                );
+            }
+        }
+    } else {
+        match &state.config.backend_url {
+            Some(u) => u,
+            None => {
+                err!(
+                    "No backend_url provided in config, unable to create QRCode for file",
+                    INTERNAL_SERVER_ERROR
+                );
+            }
         }
     };
 
@@ -140,7 +158,7 @@ pub async fn qr_code(
         err!("You can't access this file", UNAUTHORIZED);
     }
 
-    let code = QrCode::new(format!("{}/d/{}", backend_url, file.id))?;
+    let code = QrCode::new(format!("{}/d/{}", url, file.id))?;
     let mut image_bytes: Vec<u8> = Vec::new();
     code.render::<Luma<u8>>()
         .build()

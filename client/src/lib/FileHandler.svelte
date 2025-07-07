@@ -42,7 +42,8 @@
 					file,
 					endpoint,
 					// mhmhm beautiful
-					one_time_id !== undefined ? file.name + `?id=${one_time_id}` : path
+					one_time_id !== undefined ? file.name : path,
+					one_time_id !== undefined ? `id=${one_time_id}` : undefined
 				);
 			}
 		}

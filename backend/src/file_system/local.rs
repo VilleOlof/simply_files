@@ -1,13 +1,13 @@
 use async_trait::async_trait;
+use axum::extract::multipart::Field;
 use std::{
     fmt::Debug,
     io::Result,
     path::PathBuf,
-    pin::Pin,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 use tokio::{fs, task};
-use tokio_stream::{Stream, StreamExt};
+use tokio_stream::StreamExt;
 
 use crate::file_system::{FSStream, FileMetadata, FileSystem};
 
@@ -90,11 +90,7 @@ impl FileSystem for Local {
     }
 
     #[tracing::instrument(skip(stream))]
-    async fn write_stream(
-        &self,
-        path: &str,
-        mut stream: Pin<Box<dyn Stream<Item = Result<Vec<u8>>> + Send>>,
-    ) -> Result<()> {
+    async fn write_stream<'a>(&self, path: &str, mut stream: Field<'a>) -> Result<()> {
         let full_path = self.full_path(path);
         tracing::debug!("Streaming to {:?}", full_path);
 
@@ -105,10 +101,13 @@ impl FileSystem for Local {
         let mut file = fs::File::create(&full_path).await?;
 
         use tokio::io::AsyncWriteExt;
-        while let Some(chunk_result) = stream.next().await {
-            let chunk = chunk_result?;
-            file.write_all(&chunk).await?;
+        while let Some(_bytes) = stream.next().await {
+            match _bytes {
+                Ok(bytes) => file.write_all(&bytes).await?,
+                Err(err) => tracing::error!("{err:?}"),
+            };
         }
+        tracing::trace!("Exited stream.next() for local writing");
 
         Ok(())
     }

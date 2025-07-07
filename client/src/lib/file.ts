@@ -60,14 +60,15 @@ function sanitize_file_name(file_name: string): string {
     return file_name.replace(/[^a-zA-Z0-9 _-]/g, '').trim();
 }
 
-export function upload_file(file: File, endpoint: UploadEndpoint, path: string): void {
+export function upload_file(file: File, endpoint: UploadEndpoint, path: string, query?: string): void {
     try {
         let request = new XMLHttpRequest();
 
-        request.open('POST', `${PUBLIC_BACKEND}${endpoint}/${path}`);
+        request.open('POST', `${PUBLIC_BACKEND}${endpoint}/${encodeURIComponent(path)}${query ? `?${query}` : ''}`);
         request.withCredentials = true;
-        // request.setRequestHeader('Content-Type', 'application/octet-stream');
-        request.setRequestHeader('X-Filename', sanitize_file_name(file.name));
+
+        let form_data = new FormData();
+        form_data.append('file', file, sanitize_file_name(file.name));
 
         // store the start time in the request object to access it later
         (request.upload as any).start_time = Date.now();
@@ -77,14 +78,8 @@ export function upload_file(file: File, endpoint: UploadEndpoint, path: string):
             const speed = Math.round(e.loaded / ((Date.now() - (request.upload as any).start_time) / 1000));
 
             if (e.total === e.loaded || percent >= 100) {
+                // basically clamp
                 percent = 100;
-
-                dispatchEvent(new CustomEvent('upload-complete', {
-                    detail: {
-                        percent,
-                        speed
-                    }
-                }));
             }
 
             dispatchEvent(new CustomEvent('upload-progress', {
@@ -98,11 +93,19 @@ export function upload_file(file: File, endpoint: UploadEndpoint, path: string):
         request.onload = () => {
             if (request.status === 201) {
                 notification.success('Upload successful!');
+
+                dispatchEvent(new CustomEvent('upload-complete', {
+                    detail: {
+                        percent: 100,
+                        speed: Math.round(file.size / ((Date.now() - (request.upload as any).start_time) / 1000))
+                    }
+                }));
+
                 if (endpoint === "/o/upload") {
                     // add "?f=t" to the URL to indicate that the upload is done
-                    const currentPath = window.location.pathname;
+                    const currentPath = window.location.origin;
                     const data: DBFile = JSON.parse(request.responseText);
-                    goto(currentPath + `?f=t&id=${data.id}`, { replaceState: true });
+                    goto(`${currentPath}/d/${data.id}`); // preview the file
                 }
                 else {
                     invalidateAll();
@@ -116,29 +119,6 @@ export function upload_file(file: File, endpoint: UploadEndpoint, path: string):
         request.onerror = (e) => {
             notification.error(`Upload failed: ${request.status}:${request.statusText}, ${request.readyState}: ${e instanceof Error ? e.message : (e?.target as any)?.status ? (e?.target as any)?.status : 'Unknown error'}`);
             console.error('Upload error:', request.status, request.statusText, JSON.stringify(e, null, 2));
-
-            // temp test
-            // (async () => {
-            //     try {
-            //         console.log('Retrying upload...');
-            //         const res = await fetch(`${PUBLIC_BACKEND}${endpoint}/${path}`, {
-            //             method: 'POST',
-            //             headers: {
-            //                 'X-Filename': file.name
-            //             },
-            //             body: file,
-            //             credentials: 'include'
-            //         });
-            //         if (!res.ok) {
-            //             notification.error(`Retry upload failed: ${res.status}:${res.statusText}`);
-            //             console.error('Retry upload error:', res.status, res.statusText);
-            //         }
-            //     }
-            //     catch (e) {
-            //         notification.error(`Retry upload failed: ${e instanceof Error ? `${e.message}:${e.stack}` : 'Unknown error'}`);
-            //         console.error('Retry upload error:', e);
-            //     }
-            // });
         };
 
         dispatchEvent(new CustomEvent('upload-progress', {
@@ -148,7 +128,7 @@ export function upload_file(file: File, endpoint: UploadEndpoint, path: string):
             }
         }));
 
-        request.send(file);
+        request.send(form_data);
     }
     catch (e) {
         notification.error(`Failed to upload file: ${e instanceof Error ? e.message : 'Unknown error'}`);
@@ -227,4 +207,8 @@ export async function change_access_with_id(id: string, access: number): Promise
 
 export function get_download_link(file_id: string): string {
     return `${PUBLIC_BACKEND}/d/${file_id}`;
+}
+
+export function get_preview_link(file_id: string): string {
+    return `${location.origin}/d/${file_id}`;
 }

@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{error::Error, fmt::Display};
 
 use axum::{http::StatusCode, response::Result};
 
@@ -6,7 +6,7 @@ use axum::{http::StatusCode, response::Result};
 pub struct SimplyError {
     status_code: axum::http::StatusCode,
     reason: String,
-    err: Option<Box<dyn Error>>,
+    err: Option<Box<dyn Error + Send + Sync + 'static>>,
 }
 
 #[allow(unused)]
@@ -22,7 +22,7 @@ impl SimplyError {
     pub fn full<T>(
         status_code: StatusCode,
         reason: &str,
-        err: impl Error + 'static,
+        err: impl Error + Send + Sync + 'static,
     ) -> Result<T, Self> {
         Err(Self {
             status_code,
@@ -34,7 +34,7 @@ impl SimplyError {
     pub fn construct<S: Into<String>>(
         status_code: StatusCode,
         reason: S,
-        err: Option<Box<dyn Error>>,
+        err: Option<Box<dyn Error + Send + Sync + 'static>>,
     ) -> Self {
         SimplyError {
             status_code,
@@ -100,6 +100,24 @@ impl From<image::ImageError> for SimplyError {
         }
     }
 }
+
+impl From<axum::extract::multipart::MultipartError> for SimplyError {
+    fn from(value: axum::extract::multipart::MultipartError) -> Self {
+        SimplyError {
+            status_code: StatusCode::INTERNAL_SERVER_ERROR,
+            reason: "Failed Multipart operation".into(),
+            err: Some(Box::new(value)),
+        }
+    }
+}
+
+impl Display for SimplyError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} ({})", self.reason, self.status_code)
+    }
+}
+
+impl Error for SimplyError {}
 
 macro_rules! err {
     ($msg:expr) => {
