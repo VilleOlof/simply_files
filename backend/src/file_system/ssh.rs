@@ -6,9 +6,10 @@ use std::{
     net::TcpStream,
     path::{Path, PathBuf},
     pin::Pin,
-    sync::Mutex,
+    sync::Arc,
     time::Duration,
 };
+use tokio::sync::Mutex;
 use tokio_stream::{Stream, StreamExt};
 
 use crate::{
@@ -18,7 +19,7 @@ use crate::{
 
 pub struct SSH {
     #[allow(unused)]
-    session: Mutex<Session>,
+    session: Arc<Mutex<Session>>,
     sftp: ssh2::Sftp,
     root: String,
 }
@@ -30,7 +31,7 @@ impl Debug for SSH {
 }
 
 impl SSH {
-    pub fn connect(
+    pub async fn connect(
         host: &str,
         port: u16,
         username: &str,
@@ -47,7 +48,6 @@ impl SSH {
         session.set_tcp_stream(tcp);
         tracing::debug!("Started SSH handshake");
         session.handshake()?;
-        session.set_keepalive(true, 30);
 
         tracing::debug!("Authenticating SSH");
         if let Some(config) = public_key_config {
@@ -70,13 +70,43 @@ impl SSH {
             ));
         }
 
+        session.set_keepalive(true, 30);
+
         tracing::debug!("Connecting via SFTP");
         let sftp = session.sftp()?;
-        Ok(Self {
-            session: Mutex::new(session),
+        let session = Arc::new(Mutex::new(session));
+
+        let ssh = Self {
+            session,
             sftp,
             root: root.into(),
-        })
+        };
+
+        ssh.start_keepalive().await;
+
+        Ok(ssh)
+    }
+
+    pub async fn start_keepalive(&self) {
+        let session = self.session.clone();
+        tokio::spawn(async move {
+            loop {
+                let remaining = {
+                    let guard = session.lock().await;
+                    match guard.keepalive_send() {
+                        Ok(r) => r,
+                        Err(err) => {
+                            tracing::error!("SSH keepalive failed: {err:?}");
+                            break;
+                        }
+                    }
+                };
+
+                let remaining = Duration::from_secs(remaining.max(1) as u64);
+                tokio::time::sleep(remaining).await;
+            }
+        });
+        tracing::debug!("Started SSH keepalive loop");
     }
 
     fn full_path(&self, path: &str) -> String {

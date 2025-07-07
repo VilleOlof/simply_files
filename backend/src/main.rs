@@ -44,7 +44,7 @@ async fn main() {
     setup_tracing();
 
     let config = Config::read_config();
-    let fs = config.get_file_system();
+    let fs = config.get_file_system().await;
 
     if !exists(&config.db).expect("Failed to check if the database file exists") {
         File::create(&config.db).expect("Failed to create missing database file");

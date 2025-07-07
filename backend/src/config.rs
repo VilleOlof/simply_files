@@ -80,7 +80,7 @@ impl Config {
     }
 
     #[tracing::instrument(skip(self))]
-    pub fn get_file_system(&self) -> Box<dyn FileSystem> {
+    pub async fn get_file_system(&self) -> Box<dyn FileSystem> {
         match self.file_system {
             WhichFileSystem::Local => {
                 let sub_config = self.local.as_ref().expect("No local config");
@@ -101,6 +101,7 @@ impl Config {
                         &sub_config.public_key,
                         &sub_config.root,
                     )
+                    .await
                     .expect("Failed to connect to SSH host"),
                 )
             }
