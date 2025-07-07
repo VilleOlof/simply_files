@@ -10,5 +10,6 @@ pub async fn upload(
     body: Body,
 ) -> Result<Response, SimplyError> {
     let id = generate_id(None);
+    tracing::trace!("Starting private file upload");
     handler_upload(&state, &path, &id, body).await
 }

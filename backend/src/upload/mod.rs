@@ -24,12 +24,14 @@ async fn upload_via_stream(
 ) -> std::io::Result<()> {
     use std::io::{Error, ErrorKind};
 
+    tracing::trace!("Checking if file path is a valid one");
     // all uploads pass through here so we can validate shit here
     if !path_is_valid(&path) {
         tracing::error!("{:?} is invalid", path.as_ref());
         return Err(Error::new(ErrorKind::Other, "Path is invalid"));
     }
 
+    tracing::trace!("Mapping body_stream into byte_stream");
     let byte_stream = stream.map(|frame_result| {
         frame_result
             .map(|frame| frame.to_vec())
@@ -37,21 +39,25 @@ async fn upload_via_stream(
     });
     let pinned_stream: FSStream = Box::pin(byte_stream);
 
+    tracing::trace!("Starting stream write to file_system");
     fs.write_stream(&path.as_ref().to_string_lossy(), pinned_stream)
         .await
 }
 
+#[tracing::instrument(skip(state, body))]
 pub async fn handler_upload(
     state: &Arc<AppState>,
     path: &str,
     id: &str,
     body: Body,
 ) -> Result<Response, SimplyError> {
+    tracing::trace!("Checking if theres available storage");
     let bytes_stored = File::get_bytes_stored(&state.db).await?;
     if bytes_stored > state.config.storage_limit as u64 {
         err!("Storage limit reached", INSUFFICIENT_STORAGE);
     }
 
+    tracing::trace!("Creating new file entry in DB");
     let mut file = match File::new(&state.db, &id, &path).await {
         Err(err) => {
             clean_up(&state, &id, &path).await?;
@@ -60,6 +66,7 @@ pub async fn handler_upload(
         Ok(f) => f,
     };
 
+    tracing::trace!("Convert body into data stream");
     let data_stream = body.into_data_stream();
     match upload_via_stream(&state.fs, data_stream, &path).await {
         Ok(_) => (),

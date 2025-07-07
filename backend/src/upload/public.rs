@@ -33,6 +33,7 @@ pub async fn upload(
     axum::extract::Path(name): axum::extract::Path<String>,
     body: Body,
 ) -> Result<Response, SimplyError> {
+    tracing::trace!("Starting public file upload");
     let link = match FileLink::get_via_id(&state.db, &query.id).await {
         Ok(l) => l,
         Err(err) => match err {
@@ -41,6 +42,7 @@ pub async fn upload(
         },
     };
 
+    tracing::trace!("Validating link");
     if !link.is_valid_to_use() {
         err!("Invalid link", UNAUTHORIZED);
     }
@@ -54,6 +56,7 @@ pub async fn upload(
 
     let id = generate_id(None);
 
+    tracing::trace!("Starting handler for upload");
     let response = handler_upload(
         &state,
         &linked_path.to_string_lossy().to_string(),
@@ -62,6 +65,7 @@ pub async fn upload(
     )
     .await?;
 
+    tracing::trace!("Doing aftermath with public file upload");
     // sucess
     link.uploaded_with(&state.db, &id).await?;
     // always change one-time "public" uploads to well, Public
