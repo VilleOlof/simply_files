@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro&display=swap');
 @import 'tailwindcss';
 
 
@@ -9,6 +10,7 @@ body {
 
 @theme {
     --font-viga: 'Rubik', "sans-serif";
+    --font-source: 'Source Code Pro', monospace;
 
     --text-sm: 0.750rem;
     --text-base: 1rem;

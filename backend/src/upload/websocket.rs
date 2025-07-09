@@ -48,7 +48,7 @@ pub async fn upload_handler(ws: WebSocketUpgrade, data: WebsocketData) -> Respon
         .on_upgrade(move |socket| handle_socket(socket, data))
 }
 
-async fn handle_socket(mut socket: WebSocket, data: WebsocketData) {
+async fn handle_socket(mut socket: WebSocket, mut data: WebsocketData) {
     tracing::trace!("New websocket connection: {:?}", data);
 
     // we put this in most upper scope so no matter what we can save the chunk_index
@@ -93,6 +93,10 @@ async fn handle_socket(mut socket: WebSocket, data: WebsocketData) {
 
         let exists_in_db = match File::get_via_path(&data.state.db, &data.path).await {
             Ok(f) => {
+                // if it already exists, copy it id for later
+                // mostly for the last err in the most outer scope
+                // that tries to save the chunk_index
+                data.id = f.id.clone();
                 // if the total_chunks are mismatched we probably got a new file
                 // and thus ""must"" discard the old one and begin from the start.
                 // so we clear the file in db and on disk & prepare it
@@ -103,7 +107,7 @@ async fn handle_socket(mut socket: WebSocket, data: WebsocketData) {
                         &data.id
                     );
 
-                    File::delete(&data.state.db, &f.id)
+                    File::delete(&data.state.db, &data.id)
                         .await
                         .map_err(|e| UploadError::DBError(e))?;
 
@@ -302,8 +306,20 @@ async fn handle_socket(mut socket: WebSocket, data: WebsocketData) {
         Ok(_) => (),
         Err(err) => {
             tracing::error!("{err:?}");
-            // dont wanna clean-up now when we have resumability
-            // clean_up(&data.state, &data.id, &data.path).await.unwrap();
+
+            // always try and save that chunk index
+            match File::get_via_id(&data.state.db, &data.id).await {
+                Ok(mut f) => {
+                    match f
+                        .update_chunk_index(&data.state.db, chunk_index as i64)
+                        .await
+                    {
+                        Ok(_) => (),
+                        Err(e) => tracing::error!("{e:?}"),
+                    }
+                }
+                Err(e) => tracing::error!("{e:?}"),
+            };
             return;
         }
     }

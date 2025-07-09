@@ -57,7 +57,7 @@
 	</p>
 
 	<Toaster
-		position={is_mobile ? 'top-center' : 'bottom-left'}
+		position={is_mobile ? 'bottom-left' : 'bottom-left'}
 		toastOptions={{
 			duration: 8000,
 			style:

@@ -23,7 +23,8 @@ This repository contains 2 parts:
 The backend can run just fine on it's own.
 
 > [!IMPORTANT]  
-> Uploading uses websockets, make sure your server supports it.
+> Uploading uses websockets, make sure your server supports it.  
+> A frame/body size of at least 16.8MB is needed for uploads.  
 
 ### Backend
 
