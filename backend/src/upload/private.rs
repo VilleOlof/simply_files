@@ -1,18 +1,31 @@
 use axum::{
-    extract::{Multipart, State},
-    response::Response,
+    extract::{ConnectInfo, State, WebSocketUpgrade},
+    response::IntoResponse,
 };
-use std::sync::Arc;
+use std::{net::SocketAddr, sync::Arc};
 
-use crate::{AppState, error::SimplyError, generate_id, upload::handler_upload};
+use crate::{
+    AppState, generate_id,
+    upload::websocket::{self, WebsocketData},
+};
 
 // https://simply-backend.lifelike.dev/m/upload/media/content/2025-05-23%2024-52.mkv
 pub async fn upload(
+    ws: WebSocketUpgrade,
     State(state): State<Arc<AppState>>,
     axum::extract::Path(path): axum::extract::Path<String>,
-    multipart: Multipart,
-) -> Result<Response, SimplyError> {
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+) -> impl IntoResponse {
     let id = generate_id(None);
-    tracing::trace!("Starting private file upload");
-    handler_upload(&state, &path, &id, multipart).await
+    websocket::upload_handler(
+        ws,
+        WebsocketData {
+            state,
+            addr,
+            id,
+            path,
+            link: None,
+        },
+    )
+    .await
 }

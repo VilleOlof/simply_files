@@ -1,6 +1,7 @@
 use std::{
     env,
     fs::{File, OpenOptions, exists},
+    net::SocketAddr,
     path::PathBuf,
     sync::Arc,
     time::Duration,
@@ -9,7 +10,7 @@ use std::{
 use axum::{
     Router,
     extract::DefaultBodyLimit,
-    routing::{get, post},
+    routing::{any, get, post},
 };
 use sqlx::{SqlitePool, pool::PoolOptions};
 use tower_http::{cors::CorsLayer, timeout::TimeoutLayer};
@@ -28,6 +29,7 @@ mod error;
 mod file_system;
 mod preview;
 mod protected;
+mod simply_packet;
 mod speed_test;
 mod sync;
 mod upload;
@@ -74,7 +76,7 @@ async fn main() {
         .route("/qr/file/{*id}", get(download::qr_code))
         .route("/qr/link/{*id}", get(protected::link::qr_code))
         .route("/preview_data/{*id}", get(preview::get_preview_data))
-        .route("/o/upload/{*name}", post(upload::public::upload))
+        .route("/o/upload/{*name}", any(upload::public::upload))
         .route("/verify_link/{*id}", post(protected::link::verify_link))
         .with_state(state.clone())
         .nest("/speed_test", speed_test())
@@ -85,9 +87,12 @@ async fn main() {
 
     let listener = tokio::net::TcpListener::bind(&addr).await.expect(&addr);
     tracing::info!("Starting server on {addr}");
-    axum::serve(listener, app)
-        .await
-        .expect("Failed to serve app");
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .expect("Failed to serve app");
 }
 
 fn setup_tracing() {
@@ -158,10 +163,13 @@ pub fn generate_id(len: Option<usize>) -> String {
 
 async fn init_folders(fs: &Box<dyn FileSystem>) -> std::io::Result<()> {
     let root = fs.root_directory().await.to_string_lossy().to_string();
+
     if !fs.exists(&root).await? {
-        fs.create_dir_all(&root).await?;
+        tracing::debug!("Creating /data: {root:?}");
+        fs.create_dir_all("").await?;
     }
-    let public_uploads = PathBuf::from(root)
+
+    let public_uploads = PathBuf::from("")
         .join(".public_uploads")
         .to_string_lossy()
         .to_string();

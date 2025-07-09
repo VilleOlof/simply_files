@@ -4,25 +4,42 @@
 	import { type UploadEndpoint, upload_file } from './file';
 	import { clean_path } from './format';
 	import prettyBytes from 'pretty-bytes';
+	import type { UploadFile } from './upload';
+	import { goto, invalidateAll } from '$app/navigation';
+	import { notification } from './toast';
 
 	const { endpoint, one_time_id }: { endpoint: UploadEndpoint; one_time_id?: string } = $props();
 
 	let upload_progress = $state<number | null>(null);
 	let current_speed = $state<number | null>(null);
 
-	function file_upload_complete() {
+	async function file_upload_complete(e: Event) {
 		upload_progress = null;
 		current_speed = null;
 
 		removeEventListener('upload-complete', file_upload_complete);
 		removeEventListener('upload-progress', file_upload_progress);
+
+		notification.success('Upload successful!');
+		const details: UploadFile.UploadFileComplete = (e as CustomEvent).detail;
+		if (details.link_upload) {
+			// preview the file if it's a link upload
+			const currentPath = window.location.origin;
+			await goto(`${currentPath}/d/${details.db_file.id}`);
+		} else {
+			await invalidateAll();
+		}
 	}
 
 	function file_upload_progress(e: Event) {
-		const { percent, speed }: { percent: number; speed: number } = (e as CustomEvent).detail;
+		const details: UploadFile.UploadFileEventDetail = (e as CustomEvent).detail;
 
-		upload_progress = percent;
-		current_speed = speed;
+		upload_progress = details.percent;
+		current_speed = calculate_speed(details);
+	}
+
+	function calculate_speed(details: UploadFile.UploadFileEventDetail): number {
+		return Math.round(details.bytes_sent / ((Date.now() - details.upload_start_time) / 1000));
 	}
 
 	async function upload(files: FileList) {

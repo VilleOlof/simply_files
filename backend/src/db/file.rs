@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_repr::Serialize_repr;
 use sqlx::{
     Result, SqlitePool,
@@ -7,7 +7,7 @@ use sqlx::{
 };
 use time::OffsetDateTime;
 
-#[derive(Debug, FromRow, Clone, Serialize)]
+#[derive(Debug, FromRow, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct File {
     pub id: String,
     pub path: String,
@@ -17,6 +17,8 @@ pub struct File {
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
     access: i64,
+    pub chunk_index: i64,
+    pub total_chunks: i64,
 }
 
 #[derive(Debug, Type, Clone, Serialize_repr, PartialEq, Eq)]
@@ -58,7 +60,9 @@ impl File {
                     last_downloaded_at DATETIME,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    access INTEGER DEFAULT 0
+                    access INTEGER DEFAULT 0,
+                    chunk_index INTEGER DEFAULT 0,
+                    total_chunks INTEGER
                 );
             "#,
         )
@@ -92,12 +96,14 @@ impl File {
     }
 
     #[tracing::instrument(skip(db))]
-    pub async fn new(db: &SqlitePool, id: &str, path: &str) -> Result<Self> {
-        let file: Self = query_as(r#"INSERT INTO files (id, path) VALUES (?, ?) RETURNING *;"#)
-            .bind(id)
-            .bind(path)
-            .fetch_one(db)
-            .await?;
+    pub async fn new(db: &SqlitePool, id: &str, path: &str, total_chunks: i64) -> Result<Self> {
+        let file: Self =
+            query_as(r#"INSERT INTO files (id, path, total_chunks) VALUES (?, ?, ?) RETURNING *;"#)
+                .bind(id)
+                .bind(path)
+                .bind(total_chunks)
+                .fetch_one(db)
+                .await?;
 
         Ok(file)
     }
@@ -208,5 +214,18 @@ impl File {
         Ok(query_scalar(r#"SELECT COUNT(*) FROM files"#)
             .fetch_one(db)
             .await?)
+    }
+
+    #[tracing::instrument(skip(self, db))]
+    pub async fn update_chunk_index(&mut self, db: &SqlitePool, index: i64) -> Result<()> {
+        query(r#"UPDATE files SET chunk_index = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"#)
+            .bind(index)
+            .bind(&self.id)
+            .execute(db)
+            .await?;
+
+        self.chunk_index = index;
+
+        Ok(())
     }
 }

@@ -9,6 +9,7 @@ File sharing done easily.
 - Folders to help you organize
 - QR code generation to easily share
 - Video/image/audio/text file preview
+- File resumability & streaming
 - No ads, no payment, 100% free
 - Store your files locally or via SFTP
 - No AI bullshit
@@ -20,6 +21,9 @@ This repository contains 2 parts:
 2. The client, which is a web interace to interact with the backend.
 
 The backend can run just fine on it's own.
+
+> [!IMPORTANT]  
+> Uploading uses websockets, make sure your server supports it.
 
 ### Backend
 
@@ -113,6 +117,7 @@ And add a `.env` in the `client` directory with the following content:
 
 ```sh
 PUBLIC_BACKEND = "https://backend_url.com"
+PUBLIC_BACKEND_WS = "wss://backend_url.com"
 ```
 
 This URL should point to the backend you configured earlier.  

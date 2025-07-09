@@ -101,16 +101,6 @@ impl From<image::ImageError> for SimplyError {
     }
 }
 
-impl From<axum::extract::multipart::MultipartError> for SimplyError {
-    fn from(value: axum::extract::multipart::MultipartError) -> Self {
-        SimplyError {
-            status_code: StatusCode::INTERNAL_SERVER_ERROR,
-            reason: "Failed Multipart operation".into(),
-            err: Some(Box::new(value)),
-        }
-    }
-}
-
 impl Display for SimplyError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} ({})", self.reason, self.status_code)

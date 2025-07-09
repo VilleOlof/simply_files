@@ -1,6 +1,5 @@
 use async_trait::async_trait;
-use axum::extract::multipart::Field;
-use ssh2::Session;
+use ssh2::{OpenFlags, OpenType, Session};
 use std::{
     fmt::Debug,
     io::{Read, Result, Write},
@@ -10,11 +9,10 @@ use std::{
     time::Duration,
 };
 use tokio::sync::Mutex;
-use tokio_stream::StreamExt;
 
 use crate::{
     config::{SSHPassword, SSHPublicKey},
-    file_system::{FSStream, FileMetadata, FileSystem},
+    file_system::{FSStream, FileHandler, FileMetadata, FileSystem},
 };
 
 pub struct SSH {
@@ -177,20 +175,6 @@ impl FileSystem for SSH {
         Ok(())
     }
 
-    #[tracing::instrument(skip(stream))]
-    async fn write_stream<'a>(&self, path: &str, mut stream: Field<'a>) -> Result<()> {
-        let full_path = self.full_path(path);
-        tracing::debug!("Streaming to {:?}", full_path);
-        let mut file = self.sftp.create(Path::new(&full_path))?;
-
-        while let Some(Ok(bytes)) = stream.next().await {
-            file.write_all(&bytes)?;
-        }
-        tracing::trace!("Exited stream.next() for ssh writing");
-
-        Ok(())
-    }
-
     #[tracing::instrument]
     async fn delete(&self, path: &str) -> Result<()> {
         let full_path = self.full_path(path);
@@ -217,6 +201,21 @@ impl FileSystem for SSH {
             size: stat.raw().filesize,
             modified: stat.raw().mtime as u64,
         })
+    }
+
+    #[tracing::instrument]
+    async fn get_file_handler(&self, path: &str) -> Result<FileHandler> {
+        let full_path = self.full_path(path);
+        tracing::debug!("{:?}", full_path);
+
+        let file = self.sftp.open_mode(
+            full_path,
+            OpenFlags::READ | OpenFlags::WRITE | OpenFlags::CREATE,
+            600,
+            OpenType::File,
+        )?;
+
+        Ok(Box::new(file))
     }
 
     #[tracing::instrument]

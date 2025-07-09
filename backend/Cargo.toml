@@ -13,13 +13,18 @@ tokio = { version = "1.45.1", features = ["full"] }
 tokio-stream = "0.1"
 pin-project-lite = "0.2"
 futures-core = "0.3"
+futures-util = { version = "0.3", default-features = false, features = [
+    "sink",
+    "std",
+] }
 ssh2 = "0.9"
 serde = { version = "1.0", features = ["derive"] }
 serde_repr = "0.1"
+serde_json = "1.0"
 toml = "0.8.23"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3.0", features = ["json"] }
-axum = { version = "0.8.4", features = ["macros", "multipart"] }
+axum = { version = "0.8.4", features = ["macros", "ws"] }
 tower-http = { version = "0.6.5", features = ["cors", "timeout"] }
 axum-extra = { version = "0.10.1", features = ["cookie"] }
 mime_guess = "2.0.5"

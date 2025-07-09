@@ -3,6 +3,7 @@ import { PUBLIC_BACKEND } from "$env/static/public";
 import prettyBytes from "pretty-bytes";
 import { get_good_path } from "./format";
 import { notification } from "./toast";
+import { UploadFile } from "./upload";
 
 export type DBFile = {
     id: string,
@@ -55,90 +56,8 @@ export function upload_button(one_time: boolean = false) {
     input.click();
 }
 
-function sanitize_file_name(file_name: string): string {
-    // Remove any characters that are not alphanumeric, spaces, or underscores
-    return file_name.replace(/[^a-zA-Z0-9 _-]/g, '').trim();
-}
-
 export function upload_file(file: File, endpoint: UploadEndpoint, path: string, query?: string): void {
-    try {
-        let request = new XMLHttpRequest();
-
-        request.open('POST', `${PUBLIC_BACKEND}${endpoint}/${encodeURIComponent(path)}${query ? `?${query}` : ''}`);
-        request.withCredentials = true;
-
-        let form_data = new FormData();
-        form_data.append('file', file, sanitize_file_name(file.name));
-
-        // store the start time in the request object to access it later
-        (request.upload as any).start_time = Date.now();
-        request.upload.onprogress = (e) => {
-            let percent = Math.round((e.loaded / file.size) * 100);
-
-            const speed = Math.round(e.loaded / ((Date.now() - (request.upload as any).start_time) / 1000));
-
-            if (e.total === e.loaded || percent >= 100) {
-                // basically clamp
-                percent = 100;
-            }
-
-            dispatchEvent(new CustomEvent('upload-progress', {
-                detail: {
-                    percent,
-                    speed
-                }
-            }));
-        }
-
-        request.onload = () => {
-            if (request.status === 201) {
-                notification.success('Upload successful!');
-
-                dispatchEvent(new CustomEvent('upload-complete', {
-                    detail: {
-                        percent: 100,
-                        speed: Math.round(file.size / ((Date.now() - (request.upload as any).start_time) / 1000))
-                    }
-                }));
-
-                if (endpoint === "/o/upload") {
-                    // add "?f=t" to the URL to indicate that the upload is done
-                    const currentPath = window.location.origin;
-                    const data: DBFile = JSON.parse(request.responseText);
-                    goto(`${currentPath}/d/${data.id}`); // preview the file
-                }
-                else {
-                    invalidateAll();
-                }
-            } else {
-                notification.error(`Failed to upload file: ${request.statusText}`);
-                console.error('Upload failed:', request.status, request.statusText);
-            }
-        }
-
-        request.onerror = (e) => {
-            notification.error(`Upload failed: ${request.status}:${request.statusText}, ${request.readyState}: ${e instanceof Error ? e.message : (e?.target as any)?.status ? (e?.target as any)?.status : 'Unknown error'}`);
-            console.error('Upload error:', request.status, request.statusText, JSON.stringify(e, null, 2));
-        };
-
-        dispatchEvent(new CustomEvent('upload-progress', {
-            detail: {
-                percent: 0,
-                speed: 0
-            }
-        }));
-
-        request.send(form_data);
-    }
-    catch (e) {
-        notification.error(`Failed to upload file: ${e instanceof Error ? e.message : 'Unknown error'}`);
-        if (e instanceof Error) {
-            console.error('Upload error:', e.message, e.stack, e.name, e.cause);
-        }
-        else {
-            console.error('Upload error:', e);
-        }
-    }
+    new UploadFile(file, endpoint, path, query);
 }
 
 export async function get_files(path: string, token?: string, server?: boolean): Promise<FileMetadata[]> {

@@ -1,15 +1,16 @@
 use async_trait::async_trait;
-use axum::extract::multipart::Field;
 use std::{
     fmt::Debug,
     io::Result,
     path::PathBuf,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
-use tokio::{fs, task};
-use tokio_stream::StreamExt;
+use tokio::{
+    fs::{self},
+    task,
+};
 
-use crate::file_system::{FSStream, FileMetadata, FileSystem};
+use crate::file_system::{FSStream, FileHandler, FileMetadata, FileSystem};
 
 pub struct Local {
     pub root: PathBuf,
@@ -89,29 +90,6 @@ impl FileSystem for Local {
         fs::write(full_path, data).await
     }
 
-    #[tracing::instrument(skip(stream))]
-    async fn write_stream<'a>(&self, path: &str, mut stream: Field<'a>) -> Result<()> {
-        let full_path = self.full_path(path);
-        tracing::debug!("Streaming to {:?}", full_path);
-
-        if let Some(parent) = full_path.parent() {
-            fs::create_dir_all(parent).await?;
-        }
-
-        let mut file = fs::File::create(&full_path).await?;
-
-        use tokio::io::AsyncWriteExt;
-        while let Some(_bytes) = stream.next().await {
-            match _bytes {
-                Ok(bytes) => file.write_all(&bytes).await?,
-                Err(err) => tracing::error!("{err:?}"),
-            };
-        }
-        tracing::trace!("Exited stream.next() for local writing");
-
-        Ok(())
-    }
-
     #[tracing::instrument]
     async fn delete(&self, path: &str) -> Result<()> {
         let full_path = self.full_path(path);
@@ -142,6 +120,22 @@ impl FileSystem for Local {
                 .unwrap_or(Duration::from_secs(0))
                 .as_secs(),
         })
+    }
+
+    #[tracing::instrument]
+    async fn get_file_handler(&self, path: &str) -> Result<FileHandler> {
+        let full_path = self.full_path(path);
+        tracing::debug!("{:?}", full_path);
+
+        let file = tokio::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(full_path)
+            .await?;
+
+        let std_file: std::fs::File = file.into_std().await;
+        Ok(Box::new(std_file))
     }
 
     #[tracing::instrument]

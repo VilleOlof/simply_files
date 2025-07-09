@@ -6,7 +6,7 @@ use axum::{
     http::HeaderMap,
     middleware::{Next, from_fn_with_state},
     response::Response,
-    routing::{delete, get, post},
+    routing::{any, delete, get, post},
 };
 use axum_extra::extract::CookieJar;
 
@@ -30,7 +30,7 @@ pub fn protected_routes(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/check", get(|| async { "Simply... Files" }))
         .route("/logout", get(logout::logout))
-        .route("/upload/{*path}", post(private::upload))
+        .route("/upload/{*path}", any(private::upload))
         .route("/new_link", post(link::new_link))
         .route("/links", get(link::get_unused_links))
         .route("/link/{*id}", delete(link::delete_link))

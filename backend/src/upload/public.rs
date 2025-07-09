@@ -1,22 +1,19 @@
 //! "Public" upload refers to files uploaded via one-time links that anyone with it can use
 
-use std::{path::PathBuf, sync::Arc};
+use std::{net::SocketAddr, path::PathBuf, sync::Arc};
 
 use axum::{
-    extract::{Multipart, Query, State},
-    response::Response,
+    extract::{ConnectInfo, Query, State, WebSocketUpgrade},
+    http::StatusCode,
+    response::{IntoResponse, Response},
 };
 use serde::Deserialize;
 
 use crate::{
     AppState,
-    db::{
-        file::{File, FileAccess},
-        links::FileLink,
-    },
-    error::{SimplyError, err},
+    db::links::FileLink,
     generate_id,
-    upload::handler_upload,
+    upload::websocket::{self, WebsocketData},
 };
 
 #[derive(Debug, Deserialize)]
@@ -30,46 +27,49 @@ pub async fn upload(
     State(state): State<Arc<AppState>>,
     Query(query): Query<UploadQuery>,
     axum::extract::Path(name): axum::extract::Path<String>,
-    multipart: Multipart,
-) -> Result<Response, SimplyError> {
+    ws: WebSocketUpgrade,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+) -> Response {
     tracing::trace!("Starting public file upload");
     let link = match FileLink::get_via_id(&state.db, &query.id).await {
         Ok(l) => l,
         Err(err) => match err {
-            sqlx::Error::RowNotFound => err!("No link with this id found", NOT_FOUND),
-            _ => return Err(SimplyError::from(err)),
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, "No link with this id found").into_response();
+            }
+            _ => {
+                tracing::error!("{err:?}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Failed to fetch link in DB",
+                )
+                    .into_response();
+            }
         },
     };
 
     tracing::trace!("Validating link");
     if !link.is_valid_to_use() {
-        err!("Invalid link", UNAUTHORIZED);
+        return (StatusCode::UNAUTHORIZED, "Invalid link").into_response();
     }
 
     let name = match PathBuf::from(name).file_name() {
         Some(f) => f.to_string_lossy().to_string(),
-        None => err!("Invalid file name", BAD_REQUEST),
+        None => return (StatusCode::BAD_REQUEST, "Invalid file name").into_response(),
     };
 
     let linked_path = PathBuf::from(".public_uploads").join(&name);
 
     let id = generate_id(None);
-
-    tracing::trace!("Starting handler for upload");
-    let response = handler_upload(
-        &state,
-        &linked_path.to_string_lossy().to_string(),
-        &id,
-        multipart,
+    websocket::upload_handler(
+        ws,
+        WebsocketData {
+            state: state.clone(),
+            id: id.clone(),
+            addr,
+            path: linked_path.to_string_lossy().to_string(),
+            link: Some(link),
+        },
     )
-    .await?;
-
-    tracing::trace!("Doing aftermath with public file upload");
-    // sucess
-    link.uploaded_with(&state.db, &id).await?;
-    // always change one-time "public" uploads to well, Public
-    let mut file = File::get_via_id(&state.db, &id).await?;
-    file.change_access(&state.db, FileAccess::Public).await?;
-
-    Ok(response)
+    .await
 }

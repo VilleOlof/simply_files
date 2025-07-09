@@ -1,86 +1,6 @@
-use axum::Json;
-use axum::extract::Multipart;
-use axum::extract::multipart::Field;
-use axum::response::IntoResponse;
-use axum::{http::StatusCode, response::Response};
-
-use std::path::Path;
-
-use std::sync::Arc;
-
-use crate::db::file::File;
-use crate::error::{SimplyError, err};
-use crate::{AppState, file_system::FileSystem};
-
 pub mod private;
 pub mod public;
-
-/// Main function for streaming files from a client to the given file system
-async fn upload_via_stream(
-    fs: &Box<dyn FileSystem>,
-    stream: Field<'_>,
-    path: impl AsRef<Path>,
-) -> std::io::Result<()> {
-    use std::io::{Error, ErrorKind};
-
-    tracing::trace!("Checking if file path is a valid one");
-    // all uploads pass through here so we can validate shit here
-    if !path_is_valid(&path) {
-        tracing::error!("{:?} is invalid", path.as_ref());
-        return Err(Error::new(ErrorKind::Other, "Path is invalid"));
-    }
-
-    tracing::trace!("Starting stream write to file_system");
-    fs.write_stream(&path.as_ref().to_string_lossy(), stream)
-        .await
-}
-
-#[tracing::instrument(skip(state, multipart))]
-pub async fn handler_upload(
-    state: &Arc<AppState>,
-    path: &str,
-    id: &str,
-    mut multipart: Multipart,
-) -> Result<Response, SimplyError> {
-    tracing::trace!("Checking if theres available storage");
-    let bytes_stored = File::get_bytes_stored(&state.db).await?;
-    if bytes_stored > state.config.storage_limit as u64 {
-        err!("Storage limit reached", INSUFFICIENT_STORAGE);
-    }
-
-    tracing::trace!("Creating new file entry in DB");
-    let mut file = match File::new(&state.db, &id, &path).await {
-        Err(err) => {
-            clean_up(&state, &id, &path).await?;
-            err!("Failed to create file entry", INTERNAL_SERVER_ERROR, err);
-        }
-        Ok(f) => f,
-    };
-
-    match {
-        if let Some(field) = multipart.next_field().await? {
-            upload_via_stream(&state.fs, field, &path).await?;
-        }
-
-        Ok::<(), SimplyError>(())
-    } {
-        Ok(_) => (),
-        Err(err) => {
-            // if the upload_stream fails, we need to backtrack to not get loose files
-            clean_up(&state, &id, &path).await?;
-            err!("Failed upload via streaming", INTERNAL_SERVER_ERROR, err);
-        }
-    }
-
-    let metadata = state.fs.metadata(&path).await?;
-    file.successful_upload(&state.db, metadata.size as i64)
-        .await?;
-
-    let mut response = Json(file).into_response();
-    *response.status_mut() = StatusCode::CREATED;
-
-    Ok(response)
-}
+pub mod websocket;
 
 /// A path cannot be root or go back or anything foul
 fn path_is_valid(path: impl AsRef<std::path::Path>) -> bool {
@@ -93,14 +13,4 @@ fn path_is_valid(path: impl AsRef<std::path::Path>) -> bool {
     }
 
     return true;
-}
-
-async fn clean_up(state: &Arc<AppState>, id: &str, path: &str) -> Result<(), SimplyError> {
-    File::delete(&state.db, &id).await?;
-
-    if state.fs.exists(&path).await? {
-        state.fs.delete(&path).await?;
-    }
-
-    Ok(())
 }

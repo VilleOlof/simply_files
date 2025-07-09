@@ -95,8 +95,8 @@ async fn handle_entry(
     match File::get_via_path(&state.db, &db_path).await {
         Ok(_) => return Ok(()), // exists so we can skip doing anything
         Err(_) => {
-            // doesnt exist, so we add
-            let mut file = File::new(&state.db, &generate_id(None), &db_path).await?;
+            // doesnt exist, so we add. we can give it a -1 total chunks since its from syncing
+            let mut file = File::new(&state.db, &generate_id(None), &db_path, -1).await?;
             file.successful_upload(&state.db, size).await?;
 
             tracing::info!(
