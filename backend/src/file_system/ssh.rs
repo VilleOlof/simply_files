@@ -211,7 +211,7 @@ impl FileSystem for SSH {
         let file = self.sftp.open_mode(
             full_path,
             OpenFlags::READ | OpenFlags::WRITE | OpenFlags::CREATE,
-            644,
+            0o666,
             OpenType::File,
         )?;
 
