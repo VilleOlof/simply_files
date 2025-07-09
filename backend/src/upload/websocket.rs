@@ -166,9 +166,9 @@ async fn handle_socket(mut socket: WebSocket, data: WebsocketData) {
         let upload_result: Result<(), UploadError> = {
             while let Some(msg) = rec.next().await {
                 if let Ok(msg) = msg {
-                    if let Message::Binary(data) = msg {
-                        let packet =
-                            Packet::from_bytes(&data).map_err(|e| UploadError::PacketError(e))?;
+                    if let Message::Binary(msg_data) = msg {
+                        let packet = Packet::from_bytes(&msg_data)
+                            .map_err(|e| UploadError::PacketError(e))?;
 
                         match packet {
                             Packet::Binary(chunk) => {
@@ -194,6 +194,12 @@ async fn handle_socket(mut socket: WebSocket, data: WebsocketData) {
                                     .map_err(|e| UploadError::FailedIO(e))?;
 
                                 chunk_index += 1;
+                                if chunk_index % 1000 == 0 {
+                                    tracing::debug!(
+                                        "[{}] Got 1000nth chunk: {chunk_index}/{total_chunks}",
+                                        &data.id
+                                    );
+                                }
 
                                 if chunk_index >= total_chunks {
                                     tracing::trace!(

@@ -12,10 +12,12 @@
 
 	let upload_progress = $state<number | null>(null);
 	let current_speed = $state<number | null>(null);
+	let chunk_info = $state<{ chunk_index: number; total_chunks: number } | null>(null);
 
 	async function file_upload_complete(e: Event) {
 		upload_progress = null;
 		current_speed = null;
+		chunk_info = null;
 
 		removeEventListener('upload-complete', file_upload_complete);
 		removeEventListener('upload-progress', file_upload_progress);
@@ -35,6 +37,10 @@
 
 		upload_progress = details.percent;
 		current_speed = calculate_speed(details);
+		chunk_info = {
+			chunk_index: details.chunk_index,
+			total_chunks: details.total_chunks
+		};
 	}
 
 	function calculate_speed(details: UploadFile.UploadFileEventDetail): number {
@@ -112,9 +118,9 @@ so a solution to this would be nice but not until someone complains <3
 			style="width: {upload_progress}%"
 		></div>
 
-		{#if current_speed !== null}
+		{#if current_speed !== null && chunk_info !== null}
 			<span class="text-text-1 bg-background-2/60 z-10 h-full px-4 text-sm">
-				{prettyBytes(current_speed)}/s ~
+				{prettyBytes(current_speed)}/s ~ ({chunk_info.chunk_index + 1}/{chunk_info.total_chunks})
 			</span>
 		{/if}
 	</div>
