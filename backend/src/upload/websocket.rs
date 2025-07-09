@@ -50,6 +50,8 @@ pub async fn upload_handler(ws: WebSocketUpgrade, data: WebsocketData) -> Respon
 async fn handle_socket(mut socket: WebSocket, data: WebsocketData) {
     tracing::trace!("New websocket connection: {:?}", data);
 
+    // we put this in most upper scope so no matter what we can save the chunk_index
+    let mut chunk_index: u64 = 0;
     match async {
         socket
             .send(message!(JsonData::ConnectionAccepted))
@@ -144,7 +146,7 @@ async fn handle_socket(mut socket: WebSocket, data: WebsocketData) {
             .await
             .map_err(|e| UploadError::FailedIO(e))?;
         let mut writer = std::io::BufWriter::new(file_handler);
-        let mut chunk_index = db_file.chunk_index as u64; // start at whatever chunk_index is from db, if new it defaults to 0
+        chunk_index = db_file.chunk_index as u64; // start at whatever chunk_index is from db, if new it defaults to 0
 
         tracing::trace!(
             "Chunk metdata: total: {}, bytes per: {}, starting_index: {}",
@@ -268,6 +270,14 @@ async fn handle_socket(mut socket: WebSocket, data: WebsocketData) {
                 tracing::trace!("Sent UploadComplete [Packet#5]");
             }
             Err(err) => {
+                // try and save chunk_index at last moment
+                File::get_via_id(&data.state.db, &data.id)
+                    .await
+                    .map_err(|e| UploadError::DBError(e))?
+                    .update_chunk_index(&data.state.db, chunk_index as i64)
+                    .await
+                    .map_err(|e| UploadError::DBError(e))?;
+
                 // propogate it
                 return Err(err);
             }
