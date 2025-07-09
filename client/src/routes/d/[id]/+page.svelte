@@ -59,7 +59,7 @@
 		{:else if data.meta.mime_type.startsWith('audio')}
 			<audio class="max-h-full w-full" src={data.url} controls></audio>
 		{:else if data.meta.mime_type.startsWith('text')}
-			{#await fetch(data.url)}
+			{#await fetch(data.url, { credentials: 'include' })}
 				<p>Loading text...</p>
 			{:then response}
 				{#await response.text()}

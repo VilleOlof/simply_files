@@ -231,6 +231,7 @@ async fn handle_socket(mut socket: WebSocket, data: WebsocketData) {
                             close.code,
                             close.reason.to_string()
                         );
+                        return Err(UploadError::ClientDisconnected);
                     } else {
                         return Err(UploadError::UnexpectedMessageType);
                     }
