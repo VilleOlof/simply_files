@@ -12,6 +12,7 @@ pub struct SimplyError {
 #[allow(unused)]
 impl SimplyError {
     pub fn status<T>(status_code: StatusCode, reason: &str) -> Result<T, Self> {
+        tracing::error!("SimplyError: {status_code}: {reason}");
         Err(Self {
             status_code,
             reason: reason.to_string(),
@@ -24,6 +25,7 @@ impl SimplyError {
         reason: &str,
         err: impl Error + Send + Sync + 'static,
     ) -> Result<T, Self> {
+        tracing::error!("SimplyError: {status_code}: {reason} ({err:?}");
         Err(Self {
             status_code,
             reason: reason.to_string(),
@@ -36,9 +38,11 @@ impl SimplyError {
         reason: S,
         err: Option<Box<dyn Error + Send + Sync + 'static>>,
     ) -> Self {
+        let str = reason.into();
+        tracing::error!("SimplyError: {status_code}: {str} ({err:?})");
         SimplyError {
             status_code,
-            reason: reason.into(),
+            reason: str,
             err,
         }
     }
