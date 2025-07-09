@@ -24,9 +24,7 @@
 		const details: UploadFile.UploadFileComplete = (e as CustomEvent).detail;
 		if (details.link_upload) {
 			// preview the file if it's a link upload
-			const currentPath = window.location.origin;
-			await goto(`${currentPath}/d/${details.db_file.id}`);
-			window.location.reload(); // do a full reload
+			await goto(`/d/${details.db_file.id}`, { invalidateAll: true });
 		} else {
 			await invalidateAll();
 		}
