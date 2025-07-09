@@ -9,7 +9,7 @@ export class UploadFile {
     private socket: WebSocket;
     private readonly URL: string = `${PUBLIC_BACKEND_WS}`;
 
-    public readonly CHUNK_SIZE = 8 * 1024 * 1024; // 8 MB
+    public readonly CHUNK_SIZE = 16 * 1024 * 1024; // 16 MB
     private chunk_index: number = 0;
     private total_chunks: number = 0;
 
@@ -99,7 +99,7 @@ export class UploadFile {
         this.send_message(message.buffer, UploadFile.PacketType.Json);
     }
 
-    private async upload() {
+    private async begin_upload() {
         let startTime = Date.now();
         while (this.socket.readyState !== WebSocket.OPEN) {
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -110,27 +110,32 @@ export class UploadFile {
 
         this.upload_start_time = Date.now();
         this.progress = UploadFile.UploadProgress.Uploading;
-        while (this.chunk_index < this.total_chunks) {
-            const start = this.chunk_index * this.CHUNK_SIZE;
-            const end = Math.min(this.file.size, start + this.CHUNK_SIZE);
-            const chunk = await this.file.slice(start, end).arrayBuffer();
 
-            await this.upload_chunk(chunk);
+        await this.next();
+    }
 
-            dispatchEvent(new CustomEvent('upload-progress', {
-                detail: {
-                    file: this.file,
-                    percent: Math.round(((this.chunk_index + 1) / this.total_chunks) * 100),
-                    total_bytes: this.file.size,
-                    bytes_sent: this.bytes_sent,
-                    chunk_index: this.chunk_index,
-                    total_chunks: this.total_chunks,
-                    upload_start_time: this.upload_start_time,
-                } as UploadFile.UploadFileEventDetail
-            }));
+    private async next() {
+        const start = this.chunk_index * this.CHUNK_SIZE;
+        const end = Math.min(this.file.size, start + this.CHUNK_SIZE);
+        const chunk = await this.file.slice(start, end).arrayBuffer();
+
+        await this.upload_chunk(chunk);
+
+        dispatchEvent(new CustomEvent('upload-progress', {
+            detail: {
+                file: this.file,
+                percent: Math.round(((this.chunk_index + 1) / this.total_chunks) * 100),
+                total_bytes: this.file.size,
+                bytes_sent: this.bytes_sent,
+                chunk_index: this.chunk_index,
+                total_chunks: this.total_chunks,
+                upload_start_time: this.upload_start_time,
+            } as UploadFile.UploadFileEventDetail
+        }));
+
+        if (this.chunk_index >= this.total_chunks) {
+            this.progress = UploadFile.UploadProgress.ClientCompleted;
         }
-
-        this.progress = UploadFile.UploadProgress.ClientCompleted;
     }
 
     private async upload_chunk(chunk: ArrayBuffer) {
@@ -157,6 +162,12 @@ export class UploadFile {
             return;
         }
 
+        // next gets its own special type so its as fast as possible
+        if (packet_type === UploadFile.PacketType.Next) {
+            await this.next();
+            return;
+        }
+
         const json_data_type = data_view.getUint8(1);
         if (json_data_type === UploadFile.JsonDataType.ConnectionAccepted) {
             this.send_initial_data();
@@ -179,7 +190,7 @@ export class UploadFile {
                 const chunk_data = parsed_data as UploadFile.ChunkIndex;
                 this.chunk_index = chunk_data.chunk_index;
 
-                await this.upload();
+                await this.begin_upload();
 
                 break;
             case UploadFile.JsonDataType.SetChunkIndex:
@@ -220,6 +231,7 @@ export namespace UploadFile {
     export const PacketType = {
         Binary: 0,
         Json: 1,
+        Next: 2
     } as const;
     export type PacketType = typeof PacketType[keyof typeof PacketType];
 

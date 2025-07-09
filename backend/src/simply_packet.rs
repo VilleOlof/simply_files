@@ -8,6 +8,7 @@ use serde_json::{Error as JsonError, from_slice, to_vec};
 pub enum Packet<'a> {
     Binary(Chunk<'a>),
     Json(JsonData),
+    Next,
 }
 
 #[derive(Debug)]
@@ -49,6 +50,7 @@ impl<'a> Packet<'a> {
         match self {
             Self::Binary(_) => 0,
             Self::Json(_) => 1,
+            Self::Next => 2,
         }
     }
 }
@@ -75,6 +77,7 @@ impl<'a> ByteConversion<'a> for Packet<'a> {
         let mut type_data = match self {
             Self::Binary(data) => data.to_bytes()?,
             Self::Json(data) => data.to_bytes()?,
+            Self::Next => return Ok(buf),
         };
 
         buf.append(&mut type_data);

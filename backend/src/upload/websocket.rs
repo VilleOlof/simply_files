@@ -6,6 +6,7 @@ use std::{
 };
 
 use axum::{
+    body::Bytes,
     extract::{
         WebSocketUpgrade,
         ws::{Message, WebSocket},
@@ -209,6 +210,16 @@ async fn handle_socket(mut socket: WebSocket, data: WebsocketData) {
                                     );
                                     break;
                                 }
+
+                                // send next ack
+                                sender
+                                    .send(Message::Binary(Bytes::from(
+                                        Packet::Next
+                                            .to_bytes()
+                                            .map_err(|e| UploadError::PacketError(e))?,
+                                    )))
+                                    .await
+                                    .map_err(|e| UploadError::FailedToSend(e))?;
                             }
                             _ => {
                                 return Err(UploadError::UnexpectedPacketType);
