@@ -26,9 +26,8 @@
 			// preview the file if it's a link upload
 			const currentPath = window.location.origin;
 			await goto(`${currentPath}/d/${details.db_file.id}`);
-		} else {
-			await invalidateAll();
 		}
+		await invalidateAll();
 	}
 
 	function file_upload_progress(e: Event) {
