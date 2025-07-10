@@ -14,5 +14,3 @@
 <TopStatusBar file_system={data.file_system} storage_limit={data.storage_limit} />
 
 <FileList files={data.files} path={data.path} />
-
-<FileHandler endpoint={'/m/upload'} />

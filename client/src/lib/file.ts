@@ -4,6 +4,7 @@ import prettyBytes from "pretty-bytes";
 import { get_good_path } from "./format";
 import { notification } from "./toast";
 import { UploadFile } from "./upload";
+import { add } from "./queue";
 
 export type DBFile = {
     id: string,
@@ -57,7 +58,13 @@ export function upload_button(one_time: boolean = false) {
 }
 
 export function upload_file(file: File, endpoint: UploadEndpoint, path: string, query?: string): void {
-    new UploadFile(file, endpoint, path, query);
+    // new UploadFile(file, endpoint, path, query);
+    add({
+        file,
+        endpoint,
+        path,
+        query
+    })
 }
 
 export async function get_files(path: string, token?: string, server?: boolean): Promise<FileMetadata[]> {

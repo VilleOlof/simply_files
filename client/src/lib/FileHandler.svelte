@@ -19,15 +19,8 @@
 	};
 	let data = $state<ProgressData | null>(null);
 
-	let upload_progress = $state<number | null>(null);
-	let current_speed = $state<number | null>(null);
-	let chunk_info = $state<{ chunk_index: number; total_chunks: number } | null>(null);
-
 	async function file_upload_complete(e: Event) {
 		data = null;
-
-		removeEventListener('upload-complete', file_upload_complete);
-		removeEventListener('upload-progress', file_upload_progress);
 
 		notification.success('Upload successful!');
 		const details: UploadFile.UploadFileComplete = (e as CustomEvent).detail;
@@ -37,6 +30,8 @@
 		} else {
 			await invalidateAll();
 		}
+
+		dispatchEvent(new CustomEvent('queue-next', { detail: details }));
 	}
 
 	function file_upload_progress(e: Event) {
@@ -66,6 +61,11 @@
 		const minutes = Math.floor((time_left % 3600) / 60);
 		const seconds = Math.floor(time_left % 60);
 
+		// if only seconds, then simply seconds
+		if (hours === 0 && minutes === 0) {
+			return String(seconds);
+		}
+
 		const formatted_hours = hours > 0 ? `${String(hours).padStart(2, '0')}:` : '';
 		const formatted_minutes = minutes > 0 ? `${String(minutes).padStart(2, '0')}:` : '';
 		const formatted_seconds = String(seconds).padStart(2, '0');
@@ -74,9 +74,6 @@
 
 	async function upload(files: FileList) {
 		if (files !== null && files.length > 0) {
-			addEventListener('upload-complete', file_upload_complete);
-			addEventListener('upload-progress', file_upload_progress);
-
 			for (let i = 0; i < files.length; i++) {
 				const file = files.item(i);
 				if (file === null) continue; // skip if file is null
@@ -122,9 +119,13 @@
 
 	onMount(() => {
 		addEventListener('manual-upload', manual_upload);
+		addEventListener('upload-complete', file_upload_complete);
+		addEventListener('upload-progress', file_upload_progress);
 
 		return () => {
 			removeEventListener('manual-upload', manual_upload);
+			removeEventListener('upload-complete', file_upload_complete);
+			removeEventListener('upload-progress', file_upload_progress);
 		};
 	});
 </script>

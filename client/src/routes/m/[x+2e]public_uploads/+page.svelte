@@ -128,6 +128,4 @@
 	{/if}
 </div>
 
-<FileHandler endpoint={'/m/upload'} />
-
 <QrCode bind:open={qr_open} link_id={qr_link_id} />

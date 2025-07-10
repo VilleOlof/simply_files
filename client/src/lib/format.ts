@@ -1,17 +1,6 @@
-import type { FileMetadata } from "./file";
 
 // try and make this css only?
 export function format_path(path: string): string {
-    return path;
-    const MAX_NAME_LENGTH = 30;
-
-    const name = path.split('.').slice(0, -1).join('.');
-    const ext = path.split('.').pop();
-
-    if (name.length > MAX_NAME_LENGTH) {
-        return `${name.slice(0, MAX_NAME_LENGTH)}... ${ext ? `.${ext}` : ''}`;
-    }
-
     return path;
 }
 
