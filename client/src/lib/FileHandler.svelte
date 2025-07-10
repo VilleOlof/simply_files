@@ -1,7 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { slide } from 'svelte/transition';
-	import { type UploadEndpoint, upload_file } from './file';
+	import {
+		type UploadEndpoint,
+		calculate_estimated_time,
+		calculate_speed,
+		upload_file
+	} from './file';
 	import { clean_path } from './format';
 	import prettyBytes from 'pretty-bytes';
 	import type { UploadFile } from './upload';
@@ -37,39 +42,14 @@
 	function file_upload_progress(e: Event) {
 		const details: UploadFile.UploadFileEventDetail = (e as CustomEvent).detail;
 
+		const speed = calculate_speed(details.bytes_sent, details.upload_start_time);
 		data = {
 			percent: details.percent,
-			speed: calculate_speed(details),
+			speed,
 			chunk_index: details.chunk_index,
 			total_chunks: details.total_chunks,
-			estimated_time: calculate_estimated_time(details)
+			estimated_time: calculate_estimated_time(details.bytes_sent, details.total_bytes, speed)
 		};
-	}
-
-	function calculate_speed(details: UploadFile.UploadFileEventDetail): number {
-		return Math.round(details.bytes_sent / ((Date.now() - details.upload_start_time) / 1000));
-	}
-
-	function calculate_estimated_time(details: UploadFile.UploadFileEventDetail): string {
-		const speed = calculate_speed(details);
-		if (speed === 0) return '00';
-		const remaining_bytes = details.total_bytes - details.bytes_sent;
-		const time_left = remaining_bytes / speed;
-
-		// HH:MM:SS format
-		const hours = Math.floor(time_left / 3600);
-		const minutes = Math.floor((time_left % 3600) / 60);
-		const seconds = Math.floor(time_left % 60);
-
-		// if only seconds, then simply seconds
-		if (hours === 0 && minutes === 0) {
-			return String(seconds);
-		}
-
-		const formatted_hours = hours > 0 ? `${String(hours).padStart(2, '0')}:` : '';
-		const formatted_minutes = minutes > 0 ? `${String(minutes).padStart(2, '0')}:` : '';
-		const formatted_seconds = String(seconds).padStart(2, '0');
-		return `${formatted_hours}${formatted_minutes}${formatted_seconds}`;
 	}
 
 	async function upload(files: FileList) {

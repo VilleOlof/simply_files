@@ -3,8 +3,6 @@
 	import Queue from '$lib/Queue.svelte';
 
 	let { children } = $props();
-
-	console.log('Mounting +layout.svelte');
 </script>
 
 <svelte:head>

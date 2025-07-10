@@ -19,15 +19,18 @@
 	<meta property="og:type" content="website" />
 	<meta property="og:title" content={data.meta.file_name} />
 	<meta property="og:description" content="Download, view or share" />
-	{#if data.meta.mime_type.startsWith('video')}
-		<meta property="og:video" content={data.url} />
-		<meta property="og:video:type" content={data.meta.mime_type} />
-	{:else if data.meta.mime_type.startsWith('image')}
-		<meta property="og:image" content={data.url} />
-		<meta property="og:image:type" content={data.meta.mime_type} />
-	{:else if data.meta.mime_type.startsWith('audio')}
-		<meta property="og:audio" content={data.url} />
-		<meta property="og:audio:type" content={data.meta.mime_type} />
+
+	{#if !data.meta.cant_preview}
+		{#if data.meta.mime_type.startsWith('video')}
+			<meta property="og:video" content={data.url} />
+			<meta property="og:video:type" content={data.meta.mime_type} />
+		{:else if data.meta.mime_type.startsWith('image')}
+			<meta property="og:image" content={data.url} />
+			<meta property="og:image:type" content={data.meta.mime_type} />
+		{:else if data.meta.mime_type.startsWith('audio')}
+			<meta property="og:audio" content={data.url} />
+			<meta property="og:audio:type" content={data.meta.mime_type} />
+		{/if}
 	{/if}
 </svelte:head>
 
@@ -51,7 +54,7 @@
 		class="bg-background-2 drop-shadow-box drop-shadow-background-3 max-h-9/12 flex items-center justify-center rounded p-2"
 	>
 		<!-- fix some more robust system on how to handle the incoming file -->
-		{#if data.meta.mime_type.startsWith('video') && !(browser && navigator?.userAgent?.includes('Firefox') && data.meta.mime_type == 'video/x-matroska')}
+		{#if !data.meta.cant_preview && data.meta.mime_type.startsWith('video') && !(browser && navigator?.userAgent?.includes('Firefox') && data.meta.mime_type == 'video/x-matroska')}
 			<!-- svelte-ignore a11y_media_has_caption -->
 			<video class="max-h-full w-full" src={data.url} controls> </video>
 		{:else if data.meta.mime_type.startsWith('image')}
@@ -93,7 +96,7 @@
 				<p class="text-wrap break-all text-center text-xl">
 					{data.meta.file_name}
 				</p>
-				<p class="text-text-2 text-sm">Can't preview this file type</p>
+				<p class="text-text-2 text-sm">Can't preview this file</p>
 			</div>
 		{/if}
 	</div>

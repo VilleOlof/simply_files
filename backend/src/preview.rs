@@ -17,6 +17,8 @@ use crate::{
     protected::standalone_auth,
 };
 
+pub const PREVIEW_FILE_LIMIT: i64 = 512_000_000; // 512 MB
+
 #[derive(Debug, Serialize)]
 pub struct PreviewData {
     pub size: i64,
@@ -26,6 +28,7 @@ pub struct PreviewData {
     pub mime_type: String,
     pub access: i64,
     pub path: Option<String>,
+    pub cant_preview: bool,
 }
 
 pub async fn get_preview_data(
@@ -72,6 +75,7 @@ pub async fn get_preview_data(
         } else {
             None
         },
+        cant_preview: file.size > PREVIEW_FILE_LIMIT,
     };
 
     Ok(Json(data))

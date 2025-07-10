@@ -7,9 +7,9 @@ export class UploadFile {
     private link_upload: boolean = false;
 
     private socket: WebSocket;
-    private readonly URL: string = `${PUBLIC_BACKEND_WS}`;
+    private static readonly URL: string = `${PUBLIC_BACKEND_WS}`;
 
-    public readonly CHUNK_SIZE = 16 * 1024 * 1024; // 16 MB
+    public static readonly CHUNK_SIZE = 16 * 1024 * 1024; // 16 MB
     private chunk_index: number = 0;
     private total_chunks: number = 0;
 
@@ -30,11 +30,11 @@ export class UploadFile {
         this.path = path;
         if (endpoint === '/o/upload') this.link_upload = true;
 
-        const url = `${this.URL}${endpoint}/${encodeURIComponent(path)}${query ? `?${query}` : ''}`;
+        const url = `${UploadFile.URL}${endpoint}/${encodeURIComponent(path)}${query ? `?${query}` : ''}`;
         this.socket = new WebSocket(url);
         this.socket.binaryType = 'arraybuffer';
 
-        this.total_chunks = Math.ceil(file.size / this.CHUNK_SIZE);
+        this.total_chunks = Math.ceil(file.size / UploadFile.CHUNK_SIZE);
 
         this.setup_socket();
     }
@@ -67,7 +67,7 @@ export class UploadFile {
         this.send_json<UploadFile.InitialUpload>({
             name: this.file.name,
             size: this.file.size,
-            chunk_size: this.CHUNK_SIZE
+            chunk_size: UploadFile.CHUNK_SIZE
         }, UploadFile.JsonDataType.InitializeUpload);
     }
 
@@ -115,8 +115,8 @@ export class UploadFile {
     }
 
     private async next() {
-        const start = this.chunk_index * this.CHUNK_SIZE;
-        const end = Math.min(this.file.size, start + this.CHUNK_SIZE);
+        const start = this.chunk_index * UploadFile.CHUNK_SIZE;
+        const end = Math.min(this.file.size, start + UploadFile.CHUNK_SIZE);
         const chunk = await this.file.slice(start, end).arrayBuffer();
 
         await this.upload_chunk(chunk);

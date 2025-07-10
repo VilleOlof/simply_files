@@ -20,12 +20,16 @@ use crate::{
     db::file::{File, FileAccess},
     download_stream::DownloadStream,
     error::{SimplyError, err},
+    preview::PREVIEW_FILE_LIMIT,
     protected::standalone_auth,
 };
 
 #[derive(Debug, Deserialize)]
 pub struct DownloadQuery {
+    // raw
     r: Option<String>,
+    // preview
+    p: Option<String>,
 }
 
 /// The one and only: Download
@@ -58,6 +62,13 @@ pub async fn download(
         && !standalone_auth(&jar, &headers, &state.config.token)
     {
         err!("You can't access this file", UNAUTHORIZED);
+    }
+
+    if query.p.unwrap_or(String::from("nuh_uh")) == "t" && file.size > PREVIEW_FILE_LIMIT {
+        err!(
+            "Can't preview this file, it's above the preview size limit",
+            IM_A_TEAPOT
+        );
     }
 
     let body = match state.fs.read_stream(&file.path).await {

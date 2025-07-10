@@ -25,7 +25,7 @@ export async function load({ params, cookies }) {
     return {
         id,
         meta: data,
-        url: get_download_link(id) + "?r=t",
+        url: get_download_link(id) + "?r=t&p=t",
         raw_url: get_download_link(id),
         has_token: token ? true : false
     }

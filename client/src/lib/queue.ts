@@ -71,7 +71,7 @@ export function changed(current: QueueItem | null): void {
             queue: queue.map(q => ({
                 name: q.file.name,
                 size: q.file.size
-            })).filter(q => q.name !== current?.file.name || q.size !== current?.file.size) // exclude the current item
+            }))
         } as QueueChanged
     }));
 }

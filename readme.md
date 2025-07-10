@@ -24,7 +24,7 @@ The backend can run just fine on it's own.
 
 > [!IMPORTANT]  
 > Uploading uses websockets, make sure your server supports it.  
-> A frame/body size of at least 16.8MB is needed for uploads.  
+> A frame/body size of at least 17MB is needed for uploads.  
 
 ### Backend
 
@@ -117,8 +117,8 @@ Start with cloning or downloading the repository.
 And add a `.env` in the `client` directory with the following content:
 
 ```sh
-PUBLIC_BACKEND = "https://backend_url.com"
-PUBLIC_BACKEND_WS = "wss://backend_url.com"
+PUBLIC_BACKEND = "https://backend.url"
+PUBLIC_BACKEND_WS = "wss://backend.url"
 ```
 
 This URL should point to the backend you configured earlier.  

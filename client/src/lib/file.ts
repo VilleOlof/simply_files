@@ -34,6 +34,7 @@ export type FilePreviewData = {
     mime_type: string,
     access: number,
     path?: string
+    cant_preview: boolean,
 }
 
 export type UploadEndpoint = "/m/upload" | "/o/upload";
@@ -137,4 +138,29 @@ export function get_download_link(file_id: string): string {
 
 export function get_preview_link(file_id: string): string {
     return `${location.origin}/d/${file_id}`;
+}
+
+export function calculate_speed(bytes_sent: number, start_time: number): number {
+    return Math.round(bytes_sent / ((Date.now() - start_time) / 1000));
+}
+
+export function calculate_estimated_time(bytes_sent: number, total_bytes: number, speed: number): string {
+    if (speed === 0) return '00';
+    const remaining_bytes = total_bytes - bytes_sent;
+    const time_left = remaining_bytes / speed;
+
+    // HH:MM:SS format
+    const hours = Math.floor(time_left / 3600);
+    const minutes = Math.floor((time_left % 3600) / 60);
+    const seconds = Math.floor(time_left % 60);
+
+    // if only seconds, then simply seconds
+    if (hours === 0 && minutes === 0) {
+        return String(seconds);
+    }
+
+    const formatted_hours = hours > 0 ? `${String(hours).padStart(2, '0')}:` : '';
+    const formatted_minutes = minutes > 0 ? `${String(minutes).padStart(2, '0')}:` : '';
+    const formatted_seconds = String(seconds).padStart(2, '0');
+    return `${formatted_hours}${formatted_minutes}${formatted_seconds}`;
 }
