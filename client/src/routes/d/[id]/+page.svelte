@@ -7,11 +7,56 @@
 	import { invalidateAll } from '$app/navigation';
 	import { change_access_with_id, get_preview_link } from '$lib/file';
 	import { browser } from '$app/environment';
+	import hljs from 'highlight.js';
+	import 'highlight.js/styles/atom-one-dark.css';
 
 	const { data }: PageProps = $props();
 
 	let qr_dialog_open: boolean = $state(false);
 	let qr_file_id: string | undefined = $state(undefined);
+
+	const top_width = 'w-4/5';
+
+	hljs.configure({
+		languages: [
+			'javascript',
+			'typescript',
+			'python',
+			'java',
+			'csharp',
+			'cpp',
+			'go',
+			'rust',
+			'bash',
+			'html',
+			'css',
+			'json',
+			'xml',
+			'yaml',
+			'markdown',
+			'c',
+			'dockerfile',
+			'elixir',
+			'excel',
+			'godot',
+			'gradle',
+			'http',
+			'kotlin',
+			'lua',
+			'nginx',
+			'nix',
+			'php',
+			'perl',
+			'pgsql',
+			'ps',
+			'proto',
+			'sql',
+			'svelte',
+			'swift',
+			'x86asm',
+			'toml'
+		]
+	});
 </script>
 
 <svelte:head>
@@ -34,7 +79,12 @@
 	{/if}
 </svelte:head>
 
-<div class="max-h-9/12 flex w-4/5 flex-col gap-4">
+<div
+	class="max-h-9/12 flex flex-col gap-4"
+	class:items-start={data.meta.mime_type.startsWith('text')}
+	class:w-fit={data.meta.mime_type.startsWith('text')}
+	class:{top_width}={!data.meta.mime_type.startsWith('text')}
+>
 	<div class="flex flex-wrap items-end gap-4">
 		<p
 			class="bg-background-2 drop-shadow-box max-w-8/12 drop-shadow-background-3 break-all rounded px-4 py-1"
@@ -51,6 +101,7 @@
 	</div>
 
 	<div
+		class:w-fit={data.meta.mime_type.startsWith('text')}
 		class="bg-background-2 drop-shadow-box drop-shadow-background-3 max-h-9/12 flex items-center justify-center rounded p-2"
 	>
 		<!-- fix some more robust system on how to handle the incoming file -->
@@ -69,7 +120,13 @@
 					<p>Loading text content...</p>
 				{:then text}
 					<div class="max-h-full w-full overflow-y-auto">
-						<pre class="text-wrap break-all">{text}</pre>
+						{#if data.meta.path?.endsWith('.txt')}
+							<pre class="text-wrap break-all">{text}</pre>
+						{:else}
+							{@const highlighted = hljs.highlightAuto(text)}
+
+							<pre class="text-wrap break-all"><code>{@html highlighted.value}</code></pre>
+						{/if}
 					</div>
 				{:catch error}
 					<p>Error loading text content: {error.message}</p>
@@ -102,7 +159,7 @@
 	</div>
 
 	<div
-		class="bg-background-2 drop-shadow-box drop-shadow-background-3 mb-5 flex flex-wrap justify-start gap-3 rounded px-4 py-2"
+		class="bg-background-2 drop-shadow-box drop-shadow-background-3 mb-5 flex w-full flex-wrap justify-start gap-3 rounded px-4 py-2"
 	>
 		<!-- always for everyone-->
 		<div class="flex flex-wrap gap-1">

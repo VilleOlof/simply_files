@@ -23,6 +23,7 @@
 		estimated_time: string;
 	};
 	let data = $state<ProgressData | null>(null);
+	let latest_speeds: number[] = [];
 
 	async function file_upload_complete(e: Event) {
 		data = null;
@@ -43,9 +44,15 @@
 		const details: UploadFile.UploadFileEventDetail = (e as CustomEvent).detail;
 
 		const speed = calculate_speed(details.bytes_sent, details.upload_start_time);
+		latest_speeds.push(speed);
+		if (latest_speeds.length > 10) {
+			latest_speeds.shift();
+		}
+		const average_speed = latest_speeds.reduce((a, b) => a + b, 0) / latest_speeds.length;
+
 		data = {
 			percent: details.percent,
-			speed,
+			speed: average_speed,
 			chunk_index: details.chunk_index,
 			total_chunks: details.total_chunks,
 			estimated_time: calculate_estimated_time(details.bytes_sent, details.total_bytes, speed)

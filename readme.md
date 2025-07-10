@@ -1,18 +1,26 @@
 # simply_files
 
+
 File sharing done easily.
 
+![A header image showcasing the web client](header_image.webp)
+
+> An image showcasing the web client, showing it's main navigation and a file preview.  
+
+
 ## Features
-- One-time links for others to upload files
-- Easy to use interface
-- Secure & fast, backend in Rust
-- Folders to help you organize
-- QR code generation to easily share
-- Video/image/audio/text file preview
-- File resumability & streaming
-- No ads, no payment, 100% free
-- Store your files locally or via SFTP
-- No AI bullshit
+- One-time links for others to upload files  
+- Easy to use interface  
+- Secure & fast, backend in Rust  
+- Folders to help you organize  
+- QR code generation to easily share  
+- Video/image/audio/code/text file preview  
+- File resumability & streaming  
+- Client file queueing  
+- No ads, no payment, 100% free  
+- Store your files locally or via SFTP  
+- API to interact with the files  
+- No AI bullshit  
 
 ## Installation
 

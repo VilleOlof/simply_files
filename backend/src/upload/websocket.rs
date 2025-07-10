@@ -88,7 +88,7 @@ async fn handle_socket(mut socket: WebSocket, mut data: WebsocketData) {
 
         let bytes_stored = File::get_bytes_stored(&data.state.db).await.unwrap();
         let remaining_storage = data.state.config.storage_limit as u64 - bytes_stored;
-        if remaining_storage + file.size > data.state.config.storage_limit as u64 {
+        if file.size > remaining_storage {
             return Err(UploadError::InsufficientStorage);
         }
 

@@ -29,8 +29,9 @@
 	<p>- Secure & fast, backend in Rust</p>
 	<p>- Folders to help you organize</p>
 	<p>- QR code generation to easily share</p>
-	<p>- Video/image/audio/text file preview</p>
+	<p>- Video/image/audio/code/text file preview</p>
 	<p>- File resumability & streaming</p>
+	<p>- Client file queueing</p>
 	<p>- No ads, no payment, 100% free</p>
 	<p>- Store your files locally or via SFTP</p>
 	<p>- No AI bullshit</p>

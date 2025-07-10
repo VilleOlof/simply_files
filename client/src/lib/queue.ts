@@ -10,7 +10,8 @@ export type QueueItem = {
 export type QueueChanged = {
     queue_length: number,
     current_item: QueueItem | null,
-    queue: { name: string, size: number }[]
+    queue: { name: string, size: number }[],
+    new_item?: QueueItem
 };
 
 let queue: QueueItem[] = [];
@@ -24,7 +25,7 @@ export async function add(item: QueueItem): Promise<void> {
         upload(item);
         changed(item);
     } else {
-        changed(queue[0]);
+        changed(queue[0], item);
     }
 }
 
@@ -63,7 +64,7 @@ function upload(item: QueueItem): void {
     new UploadFile(item.file, item.endpoint, item.path, item.query);
 }
 
-export function changed(current: QueueItem | null): void {
+export function changed(current: QueueItem | null, new_item?: QueueItem): void {
     dispatchEvent(new CustomEvent('queue-changed', {
         detail: {
             queue_length: queue.length,
@@ -71,7 +72,8 @@ export function changed(current: QueueItem | null): void {
             queue: queue.map(q => ({
                 name: q.file.name,
                 size: q.file.size
-            }))
+            })),
+            new_item: new_item
         } as QueueChanged
     }));
 }

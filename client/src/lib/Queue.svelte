@@ -10,14 +10,19 @@
 	let queue_bytes_sent = $state(0);
 	let queue_total_bytes = $state(0);
 	let estimated_time = $state<string | null>(null);
+	let latest_speeds: number[] = [];
 
 	function handle_queue_change(e: Event) {
 		const data: QueueChanged = (e as CustomEvent).detail;
 		queue_changed = data;
-		queue_total_bytes = data.queue.reduce((total, item) => total + item.size, 0);
+
+		if (data.new_item) {
+			queue_total_bytes += data.new_item.file.size;
+		}
 
 		if (queue_changed.current_item === null) {
 			queue_bytes_sent = 0;
+			queue_total_bytes = 0;
 			estimated_time = null;
 			console.log('Queue reset');
 		}
@@ -26,16 +31,24 @@
 	function handle_upload_speed(e: Event) {
 		const data: UploadFile.UploadFileEventDetail = (e as CustomEvent).detail;
 
-		queue_bytes_sent += UploadFile.CHUNK_SIZE;
+		queue_bytes_sent += data.chunk_size;
 
 		const speed = calculate_speed(data.bytes_sent, data.upload_start_time);
-		estimated_time = calculate_estimated_time(queue_bytes_sent, queue_total_bytes, speed);
+		latest_speeds.push(speed);
+		if (latest_speeds.length > 10) {
+			latest_speeds.shift(); // Keep the last 10 speeds
+		}
+		const average_speed = latest_speeds.reduce((a, b) => a + b, 0) / latest_speeds.length;
+
+		estimated_time = calculate_estimated_time(queue_bytes_sent, queue_total_bytes, average_speed);
 	}
 
 	function file_complete(e: Event) {
 		const data: UploadFile.UploadFileComplete = (e as CustomEvent).detail;
-		queue_total_bytes -= data.db_file.size;
-		queue_bytes_sent -= data.db_file.size;
+		// TODO: Improve this, since now it basically resets the estimation
+		// and jumps from like 40 down to 0 and then counts back up to the real estimation
+		// queue_total_bytes -= data.db_file.size;
+		// queue_bytes_sent -= data.db_file.size;
 	}
 
 	onMount(() => {

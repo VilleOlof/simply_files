@@ -128,6 +128,7 @@ export class UploadFile {
                 total_bytes: this.file.size,
                 bytes_sent: this.bytes_sent,
                 chunk_index: this.chunk_index,
+                chunk_size: chunk.byteLength,
                 total_chunks: this.total_chunks,
                 upload_start_time: this.upload_start_time,
             } as UploadFile.UploadFileEventDetail
@@ -263,6 +264,7 @@ export namespace UploadFile {
         bytes_sent: number;
         chunk_index: number;
         total_chunks: number;
+        chunk_size: number;
         upload_start_time: number;
         link_upload?: boolean;
     }
