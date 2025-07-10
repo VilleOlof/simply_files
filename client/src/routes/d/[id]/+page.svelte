@@ -80,10 +80,10 @@
 </svelte:head>
 
 <div
-	class="max-h-9/12 flex flex-col gap-4"
+	class="max-h-9/12 flex {data.meta.mime_type.startsWith('text')
+		? 'w-fit'
+		: 'w-4/5'} flex-col gap-4"
 	class:items-start={data.meta.mime_type.startsWith('text')}
-	class:w-fit={data.meta.mime_type.startsWith('text')}
-	class:{top_width}={!data.meta.mime_type.startsWith('text')}
 >
 	<div class="flex flex-wrap items-end gap-4">
 		<p
