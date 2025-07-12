@@ -29,7 +29,6 @@ mod error;
 mod file_system;
 mod preview;
 mod protected;
-mod simply_packet;
 mod speed_test;
 mod sync;
 mod upload;

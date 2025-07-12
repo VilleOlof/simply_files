@@ -17,12 +17,12 @@ use futures_util::{SinkExt, StreamExt};
 
 use crate::{
     AppState,
-    db::{
-        file::{File, FileAccess},
-        links::FileLink,
-    },
-    simply_packet::{ByteConversion, JsonChunkIndex, JsonData, Packet, packet},
+    db::{self, links::FileLink},
     upload::path_is_valid,
+};
+use sf_core::{
+    FileAccess, packet,
+    simply_packet::{ByteConversion, JsonChunkIndex, JsonData, Packet},
 };
 
 pub struct WebsocketData {
@@ -86,13 +86,13 @@ async fn handle_socket(mut socket: WebSocket, mut data: WebsocketData) {
             return Err(UploadError::InvalidPath(data.path));
         }
 
-        let bytes_stored = File::get_bytes_stored(&data.state.db).await.unwrap();
+        let bytes_stored = db::file::get_bytes_stored(&data.state.db).await.unwrap();
         let remaining_storage = data.state.config.storage_limit as u64 - bytes_stored;
         if file.size > remaining_storage {
             return Err(UploadError::InsufficientStorage);
         }
 
-        let exists_in_db = match File::get_via_path(&data.state.db, &data.path).await {
+        let exists_in_db = match db::file::get_via_path(&data.state.db, &data.path).await {
             Ok(f) => {
                 // if it already exists, copy it id for later
                 // mostly for the last err in the most outer scope
@@ -108,7 +108,7 @@ async fn handle_socket(mut socket: WebSocket, mut data: WebsocketData) {
                         &data.id
                     );
 
-                    File::delete(&data.state.db, &data.id)
+                    db::file::delete(&data.state.db, &data.id)
                         .await
                         .map_err(|e| UploadError::DBError(e))?;
 
@@ -140,7 +140,7 @@ async fn handle_socket(mut socket: WebSocket, mut data: WebsocketData) {
         // and its latest chunk_index
         let mut db_file = match exists_in_db {
             Some(f) => f,
-            None => File::new(&data.state.db, &data.id, &data.path, total_chunks as i64)
+            None => db::file::new(&data.state.db, &data.id, &data.path, total_chunks as i64)
                 .await
                 .map_err(|e| UploadError::DBError(e))?,
         };
@@ -252,15 +252,13 @@ async fn handle_socket(mut socket: WebSocket, mut data: WebsocketData) {
         // always, even if it fails or not. update the databases chunk index
         // this is so we can resume uploading AND this code is 100%
         // always gonna run even if the chunked upload part fails or not
-        db_file
-            .update_chunk_index(&data.state.db, chunk_index as i64)
+        db::file::update_chunk_index(&mut db_file, &data.state.db, chunk_index as i64)
             .await
             .map_err(|e| UploadError::DBError(e))?;
 
         match upload_result {
             Ok(_) => {
-                db_file
-                    .successful_upload(&data.state.db, file.size as i64)
+                db::file::successful_upload(&mut db_file, &data.state.db, file.size as i64)
                     .await
                     .unwrap();
 
@@ -270,8 +268,7 @@ async fn handle_socket(mut socket: WebSocket, mut data: WebsocketData) {
                         .await
                         .map_err(|e| UploadError::DBError(e))?;
                     // // always change one-time "public" uploads to well, Public
-                    db_file
-                        .change_access(&data.state.db, FileAccess::Public)
+                    db::file::change_access(&mut db_file, &data.state.db, FileAccess::Public)
                         .await
                         .map_err(|e| UploadError::DBError(e))?;
                 }
@@ -288,10 +285,10 @@ async fn handle_socket(mut socket: WebSocket, mut data: WebsocketData) {
             }
             Err(err) => {
                 // try and save chunk_index at last moment
-                File::get_via_id(&data.state.db, &data.id)
+                let mut file = db::file::get_via_id(&data.state.db, &data.id)
                     .await
-                    .map_err(|e| UploadError::DBError(e))?
-                    .update_chunk_index(&data.state.db, chunk_index as i64)
+                    .map_err(|e| UploadError::DBError(e))?;
+                db::file::update_chunk_index(&mut file, &data.state.db, chunk_index as i64)
                     .await
                     .map_err(|e| UploadError::DBError(e))?;
 
@@ -309,10 +306,9 @@ async fn handle_socket(mut socket: WebSocket, mut data: WebsocketData) {
             tracing::error!("{err:?}");
 
             // always try and save that chunk index
-            match File::get_via_id(&data.state.db, &data.id).await {
+            match db::file::get_via_id(&data.state.db, &data.id).await {
                 Ok(mut f) => {
-                    match f
-                        .update_chunk_index(&data.state.db, chunk_index as i64)
+                    match db::file::update_chunk_index(&mut f, &data.state.db, chunk_index as i64)
                         .await
                     {
                         Ok(_) => (),
@@ -349,7 +345,7 @@ enum UploadError {
     MessageIsNotOk(axum::Error),
     FailedToSend(axum::Error),
     FailedIO(std::io::Error),
-    PacketError(crate::simply_packet::PacketError),
+    PacketError(sf_core::simply_packet::PacketError),
     DBError(sqlx::Error),
 }
 

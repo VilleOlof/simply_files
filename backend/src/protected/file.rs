@@ -7,19 +7,16 @@ use axum::{
 };
 use serde::Deserialize;
 
-use crate::{
-    AppState,
-    db::file::{File, FileAccess},
-    error::SimplyError,
-};
+use crate::{AppState, db, error::SimplyError};
+use sf_core::FileAccess;
 
 pub async fn remove_file(
     Path(path): Path<String>,
     State(state): State<Arc<AppState>>,
 ) -> Result<StatusCode, SimplyError> {
-    let db_file = File::get_via_path(&state.db, &path).await?;
+    let db_file = db::file::get_via_path(&state.db, &path).await?;
 
-    File::delete(&state.db, &db_file.id).await?;
+    db::file::delete(&state.db, &db_file.id).await?;
     state.fs.delete(&path).await?;
 
     Ok(StatusCode::OK)
@@ -35,9 +32,9 @@ pub async fn rename_file(
     Query(query): Query<RenameQuery>,
     State(state): State<Arc<AppState>>,
 ) -> Result<StatusCode, SimplyError> {
-    let mut db_file = File::get_via_path(&state.db, &path).await?;
+    let mut db_file = db::file::get_via_path(&state.db, &path).await?;
 
-    db_file.rename(&state.db, &query.to).await?;
+    db::file::rename(&mut db_file, &state.db, &query.to).await?;
     state.fs.rename(&path, &query.to).await?;
 
     Ok(StatusCode::OK)
@@ -57,12 +54,12 @@ pub async fn change_access(
     let access: FileAccess = query.access.into();
 
     let mut file = if query.id.unwrap_or(false) {
-        File::get_via_id(&state.db, &path).await?
+        db::file::get_via_id(&state.db, &path).await?
     } else {
-        File::get_via_path(&state.db, &path).await?
+        db::file::get_via_path(&state.db, &path).await?
     };
 
-    file.change_access(&state.db, access).await?;
+    db::file::change_access(&mut file, &state.db, access).await?;
 
     Ok(StatusCode::OK)
 }

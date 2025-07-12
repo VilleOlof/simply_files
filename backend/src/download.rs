@@ -14,10 +14,10 @@ use image::{ImageFormat, Luma};
 use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
 use qrcode::QrCode;
 use serde::Deserialize;
+use sf_core::FileAccess;
 
 use crate::{
-    AppState,
-    db::file::{File, FileAccess},
+    AppState, db,
     download_stream::DownloadStream,
     error::{SimplyError, err},
     preview::PREVIEW_FILE_LIMIT,
@@ -46,7 +46,7 @@ pub async fn download(
     Query(query): Query<DownloadQuery>,
     State(state): State<Arc<AppState>>,
 ) -> Result<Response<DownloadStream>, SimplyError> {
-    let file = match File::get_via_id(&state.db, &id).await {
+    let file = match db::file::get_via_id(&state.db, &id).await {
         Ok(f) => f,
         Err(err) => match err {
             sqlx::Error::RowNotFound => err!("No file with this id found", NOT_FOUND),
@@ -153,7 +153,7 @@ pub async fn qr_code(
         }
     };
 
-    let file = match File::get_via_id(&state.db, &id).await {
+    let file = match db::file::get_via_id(&state.db, &id).await {
         Ok(f) => f,
         Err(err) => match err {
             sqlx::Error::RowNotFound => err!("No file with this id found", NOT_FOUND),

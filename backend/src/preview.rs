@@ -8,11 +8,11 @@ use axum::{
 };
 use axum_extra::extract::CookieJar;
 use serde::Serialize;
+use sf_core::FileAccess;
 use time::OffsetDateTime;
 
 use crate::{
-    AppState,
-    db::file::{File, FileAccess},
+    AppState, db,
     error::{SimplyError, err},
     protected::standalone_auth,
 };
@@ -37,7 +37,7 @@ pub async fn get_preview_data(
     Path(id): Path<String>,
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<PreviewData>, SimplyError> {
-    let file = match File::get_via_id(&state.db, &id).await {
+    let file = match db::file::get_via_id(&state.db, &id).await {
         Ok(f) => f,
         Err(err) => match err {
             sqlx::Error::RowNotFound => err!("No file with this id found", NOT_FOUND),

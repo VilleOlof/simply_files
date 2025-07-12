@@ -1,6 +1,6 @@
 use std::{io, path::PathBuf, pin::Pin, sync::Arc};
 
-use crate::{AppState, db::file::File, generate_id};
+use crate::{AppState, db, generate_id};
 
 pub async fn sync_files(state: Arc<AppState>) -> Result<(), SyncError> {
     sync_from_db(&state).await?;
@@ -9,14 +9,14 @@ pub async fn sync_files(state: Arc<AppState>) -> Result<(), SyncError> {
 }
 
 async fn sync_from_db(state: &AppState) -> Result<(), SyncError> {
-    let files = File::get_all_files(&state.db).await?;
+    let files = db::file::get_all_files(&state.db).await?;
 
     let mut count = 0;
     for file in files {
         // if any of the db files doesnt exist on the actual system
         // remove it from the database
         if !state.fs.exists(&file.path).await? {
-            File::delete(&state.db, &file.id).await?;
+            db::file::delete(&state.db, &file.id).await?;
             tracing::info!(
                 "Deleted '{:?}' from database to sync with file system",
                 PathBuf::from(file.path).file_name()
@@ -47,7 +47,7 @@ async fn sync_from_files(state: &Arc<AppState>) -> Result<(), SyncError> {
     let cb: Arc<AsyncFn> =
         Arc::new(|state, path, root, size| Box::pin(handle_entry(state.clone(), path, root, size)));
 
-    let old_file_count = File::get_total_amount_of_files(&state.db).await?;
+    let old_file_count = db::file::get_total_amount_of_files(&state.db).await?;
 
     for file in root_files {
         let full_path = PathBuf::from(&root_path).join(&file.path);
@@ -65,7 +65,7 @@ async fn sync_from_files(state: &Arc<AppState>) -> Result<(), SyncError> {
         .await?;
     }
 
-    let new_file_count = File::get_total_amount_of_files(&state.db).await?;
+    let new_file_count = db::file::get_total_amount_of_files(&state.db).await?;
     if new_file_count > old_file_count {
         tracing::info!(
             "Added {:?} new file entries into the database",
@@ -92,12 +92,12 @@ async fn handle_entry(
             return Ok(());
         }
     };
-    match File::get_via_path(&state.db, &db_path).await {
+    match db::file::get_via_path(&state.db, &db_path).await {
         Ok(_) => return Ok(()), // exists so we can skip doing anything
         Err(_) => {
             // doesnt exist, so we add. we can give it a -1 total chunks since its from syncing
-            let mut file = File::new(&state.db, &generate_id(None), &db_path, -1).await?;
-            file.successful_upload(&state.db, size).await?;
+            let mut file = db::file::new(&state.db, &generate_id(None), &db_path, -1).await?;
+            db::file::successful_upload(&mut file, &state.db, size).await?;
 
             tracing::info!(
                 "Added '{:?}' in database to sync with file system",

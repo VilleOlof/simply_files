@@ -1,0 +1,7 @@
+[package]
+name = "sf_cli"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+sf_core = { path = "../sf_core" }

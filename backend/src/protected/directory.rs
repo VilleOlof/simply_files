@@ -7,8 +7,9 @@ use axum::{
     response::Result,
 };
 use serde::Serialize;
+use sf_core::File;
 
-use crate::{AppState, db::file::File, error::SimplyError, file_system::FileMetadata};
+use crate::{AppState, error::SimplyError, file_system::FileMetadata};
 
 pub async fn get_files(
     Path(path): Path<String>,
@@ -88,8 +89,7 @@ async fn get(
 ) -> Result<Json<Vec<ClientFile>>, SimplyError> {
     let files = state.fs.list_dir(path.unwrap_or("")).await?;
 
-    let db_files =
-        crate::db::file::File::get_files_in_directory(&state.db, &path.unwrap_or("")).await?;
+    let db_files = crate::db::file::get_files_in_directory(&state.db, &path.unwrap_or("")).await?;
 
     let files = ClientFile::from(PathBuf::from(path.unwrap_or("")), files, db_files);
 

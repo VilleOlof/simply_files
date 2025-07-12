@@ -10,7 +10,7 @@ use std::{
 };
 use tokio::spawn;
 
-use crate::{AppState, db::file::File, file_system::FSStream};
+use crate::{AppState, db, file_system::FSStream};
 
 pin_project! {
     pub struct DownloadStream {
@@ -28,7 +28,7 @@ pin_project! {
                 let (state, id) = (this.state.clone(), this.file_id.clone());
 
                 spawn(async move {
-                    let file = match File::get_via_id(&state.db, &id).await {
+                    let file = match db::file::get_via_id(&state.db, &id).await {
                         Ok(f) => f,
                         Err(err) => {
                             tracing::error!("{err:?}");
@@ -36,7 +36,7 @@ pin_project! {
                         }
                     };
 
-                    match file.increment_download_count(&state.db, Some(1)).await {
+                    match db::file::increment_download_count(&file, &state.db, Some(1)).await {
                         Err(err) => {
                             tracing::error!("{err:?}");
                             return;

@@ -1,8 +1,8 @@
+use crate::File;
 use core::fmt;
-use std::array::TryFromSliceError;
-
 use serde::{Deserialize, Serialize};
 use serde_json::{Error as JsonError, from_slice, to_vec};
+use std::array::TryFromSliceError;
 
 #[derive(Debug)]
 pub enum Packet<'a> {
@@ -173,24 +173,22 @@ impl ByteConversion<'_> for JsonData {
     }
 }
 
+#[macro_export]
 macro_rules! packet {
     // Accept any expression for JsonData
     ($json:expr) => {{
-        use crate::simply_packet::{ByteConversion, Packet};
+        use sf_core::simply_packet::{ByteConversion, Packet};
         let mut packet = Packet::Json($json);
         packet.to_bytes()
     }};
     // Match a single identifier (assume it's a Chunk)
     ($binary:ident) => {{
-        use crate::simply_packet::{ByteConversion, Packet};
+        use sf_core::simply_packet::{ByteConversion, Packet};
         let mut packet = Packet::Binary($binary);
         packet.to_bytes()
     }};
 }
-
-pub(crate) use packet;
-
-use crate::db::file::File;
+// pub(crate) use packet;
 
 #[derive(Debug)]
 #[allow(unused)]

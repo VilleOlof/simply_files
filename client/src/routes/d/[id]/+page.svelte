@@ -79,6 +79,12 @@
 	{/if}
 </svelte:head>
 
+<!-- TODO: need to rework a bit on the preview width of it all
+	since it should take up as little width as possible while still
+	mainting a min-width for the preview'd data
+	and nothing almost no padding on the sides
+	but still allowing an image to take its full height (until a max-height)
+-->
 <div
 	class="max-h-9/12 flex {data.meta.mime_type.startsWith('text')
 		? 'w-fit'

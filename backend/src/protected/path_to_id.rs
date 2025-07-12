@@ -5,13 +5,14 @@ use axum::{
     extract::{Path, State},
     response::Result,
 };
+use sf_core::File;
 
-use crate::{AppState, db::file::File, error::SimplyError};
+use crate::{AppState, db, error::SimplyError};
 
 pub async fn path_to_id(
     Path(path): Path<String>,
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<File>, SimplyError> {
-    let file = File::get_via_path(&state.db, &path).await?;
+    let file = db::file::get_via_path(&state.db, &path).await?;
     Ok(Json(file))
 }
