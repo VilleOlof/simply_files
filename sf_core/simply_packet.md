@@ -86,8 +86,8 @@ A JSON packet follows a structure like this:
    ```json
    {
       "name": "example.png",
-      "size": 558275815,    // 558 MB
-      "chunk_size": 8388608 // 8 * 1024 * 1024
+      "size": 558275815,
+      "chunk_size": 8388608 
    }
    ```
 - **ReadyForUpload**  
