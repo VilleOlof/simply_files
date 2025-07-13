@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use serde::{Deserialize, Serialize};
 use serde_repr::Serialize_repr;
 use sqlx::{FromRow, Type};
@@ -21,9 +23,10 @@ pub struct File {
     pub total_chunks: i64,
 }
 
-#[derive(Debug, Type, Clone, Serialize_repr, PartialEq, Eq)]
+#[derive(Debug, Type, Clone, Serialize_repr, PartialEq, Eq, Default)]
 #[repr(u8)]
 pub enum FileAccess {
+    #[default]
     Private = 0,
     Public = 1,
 }
@@ -44,6 +47,35 @@ impl From<FileAccess> for i64 {
             FileAccess::Private => 0,
             FileAccess::Public => 1,
         }
+    }
+}
+
+impl FromStr for FileAccess {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.is_empty() {
+            return Ok(FileAccess::Private);
+        }
+
+        let num = match s.parse::<i64>() {
+            Ok(n) => n,
+            Err(err) => match s.to_lowercase().as_str() {
+                "private" => 0,
+                "public" => 1,
+                _ => return Err(format!("Failed to convert input to FileAccess: {err:?}")),
+            },
+        };
+        Ok(num.into())
+    }
+}
+
+impl ToString for FileAccess {
+    fn to_string(&self) -> String {
+        String::from(match self {
+            FileAccess::Private => "Private",
+            FileAccess::Public => "Public",
+        })
     }
 }
 

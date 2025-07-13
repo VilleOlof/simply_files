@@ -170,5 +170,8 @@ There is a Typescript client implementation at `client/src/lib/upload.ts`.
 And a Rust websocket server implementation at `backend/src/upload/websocket.rs`.  
 *Showcases how the server may receive and process the packets*  
 
+There is also a Rust client implementation at `cli/src/upload.rs`.  
+*Showcases how a client upload could look like in Rust*  
+
 And a Rust packet format implementation at `sf_core/src/simply_packet.rs`.  
 *Showcases a pure Rust packet format implementation that is both from and to bytes*  

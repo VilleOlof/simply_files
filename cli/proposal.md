@@ -72,6 +72,8 @@ dotfs config
 # Total allocated storage, used storage, free storage, total files,  
 # total bytes downloaded, total downloads
 dotfs stats
+# Removes files that havent fully been uploaded but still recorded in the database.  
+dotfs cleanup
 # dotfs help
 dotfs help
 ```

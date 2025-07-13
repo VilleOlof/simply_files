@@ -57,7 +57,7 @@ impl<'a> Packet<'a> {
 
 impl<'a> ByteConversion<'a> for Packet<'a> {
     fn from_bytes(bytes: &'a [u8]) -> Result<Packet<'a>, PacketError> {
-        if bytes.len() < 2 {
+        if bytes.len() < 1 {
             return Err(PacketError::MissingBytes);
         }
 
@@ -67,6 +67,7 @@ impl<'a> ByteConversion<'a> for Packet<'a> {
         Ok(match packet_type {
             0 => Packet::Binary(Chunk::from_bytes(type_data)?),
             1 => Packet::Json(JsonData::from_bytes(type_data)?),
+            2 => Packet::Next,
             _ => return Err(PacketError::InvalidPacketType),
         })
     }

@@ -5,3 +5,13 @@ edition = "2024"
 
 [dependencies]
 sf_core = { path = "../sf_core" }
+clap = { version = "4.5.41", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8.23"
+directories = "6.0.0"
+tracing = "0.1"
+tracing-subscriber = "0.3.0"
+tungstenite = "0.27.0"
+ureq = { version = "3.0.12", features = ["json"] }
+crossterm = "0.29.0"
+human_bytes = "0.4.3"
