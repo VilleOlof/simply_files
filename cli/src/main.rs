@@ -13,6 +13,7 @@ mod app;
 mod args;
 mod auth;
 mod config;
+mod get;
 mod upload;
 
 // TODO: Beautify all the output, switch from tracing to like a custom logging that
@@ -34,14 +35,21 @@ fn main() {
             access,
             id,
         } => upload::upload(app, local, remote, access, id),
+        Command::Get {
+            file,
+            local,
+            metadata,
+            link,
+        } => get::get(app, file, local, metadata, link),
         Command::Access { file, access } => access::access(app, file, access),
         Command::Auth(auth_command) => match auth_command {
             AuthCommands::Add {
                 name,
                 url,
                 token,
+                web_url,
                 autoset,
-            } => auth::add(app, name, url, token, autoset),
+            } => auth::add(app, name, url, token, web_url, autoset),
             AuthCommands::Ls => auth::ls(app),
             AuthCommands::Rm { name } => auth::rm(app, name),
             AuthCommands::Set { name } => auth::set(app, name),

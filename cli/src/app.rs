@@ -26,11 +26,13 @@ impl App {
                     name: String::from("ArgsHost"),
                     url: url.to_string(),
                     token: Some(token.to_string()),
+                    web_url: None,
                 },
                 None => Host {
                     name: String::from("ArgsHost"),
                     url: host_str.clone(),
                     token: None,
+                    web_url: None,
                 },
             }
         } else {
@@ -68,6 +70,14 @@ impl App {
         } else {
             req
         }
+    }
+
+    pub fn add_agent_to_req<T>(&self, req: ureq::RequestBuilder<T>) -> ureq::RequestBuilder<T> {
+        req.header("User-Agent", App::get_user_agent())
+    }
+
+    pub fn get_user_agent() -> String {
+        format!("sf_cli / {}", env!("CARGO_PKG_VERSION"))
     }
 
     pub fn get_url(&self, path: impl AsRef<str>) -> String {

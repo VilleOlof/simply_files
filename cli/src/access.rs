@@ -10,6 +10,7 @@ pub fn access(app: App, file: FileIdentifier, access: FileAccess) {
 
     let mut request = ureq::post(app.get_url(format!("/m/access/{path_component}")));
     request = app.add_auth_to_req(request);
+    request = app.add_agent_to_req(request);
     request = request.query("access", (access.clone() as i64).to_string());
     if let FileIdentifier::Id(_) = file {
         request = request.query("id", "true")

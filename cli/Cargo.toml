@@ -15,3 +15,7 @@ tungstenite = "0.27.0"
 ureq = { version = "3.0.12", features = ["json"] }
 crossterm = "0.29.0"
 human_bytes = "0.4.3"
+
+[[bin]]
+name = "sf"
+path = "src/main.rs"

@@ -88,3 +88,15 @@ impl File {
         self.access = access as i64;
     }
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PreviewData {
+    pub size: i64,
+    pub file_name: String,
+    pub id: String,
+    pub created_at: OffsetDateTime,
+    pub mime_type: String,
+    pub access: i64,
+    pub path: Option<String>,
+    pub cant_preview: bool,
+}

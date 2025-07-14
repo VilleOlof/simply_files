@@ -10,7 +10,6 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     pub hosts: Vec<Host>,
     pub default_host: Option<String>,
-    pub link_host: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -18,6 +17,7 @@ pub struct Host {
     pub name: String,
     pub url: String,
     pub token: Option<String>,
+    pub web_url: Option<String>,
 }
 
 impl Config {

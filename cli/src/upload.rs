@@ -37,20 +37,25 @@ pub fn upload(
         .join(local.file_name().unwrap())
         .to_string_lossy()
         .to_string();
+    tracing::debug!("Crafted path: {path} based on local & remote");
 
-    let socket_url = (socket_url + &path).replace("\\", "/");
+    let mut socket_url = (socket_url + &path).replace("\\", "/");
+    if let Some(id) = id {
+        socket_url = socket_url + &format!("?id={id}");
+    }
+
     let host = app.get_host();
     #[allow(unused_assignments)]
     let mut chunk_index: u64 = 0;
     let total_chunks = (local.metadata().unwrap().len() as f64 / CHUNK_SIZE as f64).ceil() as i64;
 
-    tracing::debug!("Connect to websocket: {socket_url}");
-
     let mut req = ClientRequestBuilder::new(socket_url.parse().unwrap());
     if let Some(token) = host.token {
         req = req.with_header("Authorization", format!("Bearer {token}"));
     }
+    req = req.with_header("User-Agent", App::get_user_agent());
 
+    tracing::debug!("Connecting to websocket: {socket_url}");
     let (mut socket, response) = connect_with_config(
         req,
         Some(
@@ -100,7 +105,13 @@ pub fn upload(
     if let Message::Binary(bin) = ready_upload {
         let packet = Packet::from_bytes(&bin).unwrap();
         match packet {
-            Packet::Json(JsonData::ReadyForUpload(data)) => chunk_index = data.chunk_index,
+            Packet::Json(JsonData::ReadyForUpload(data)) => {
+                tracing::debug!(
+                    "Got ReadyForUpload, going into upload loop ({} chunk_index)",
+                    data.chunk_index
+                );
+                chunk_index = data.chunk_index
+            }
             _ => return tracing::error!("Got invalid packet message"),
         }
     } else {
@@ -108,11 +119,6 @@ pub fn upload(
     }
 
     let file = File::open(&local).unwrap();
-    tracing::debug!(
-        "Got ReadyForUpload, going into upload loop ({} bytes, {} idx)",
-        file.metadata().unwrap().len(),
-        chunk_index
-    );
     tracing::info!("Starting upload on chunk {chunk_index}/{total_chunks}");
     let mut file = BufReader::new(file);
 
@@ -120,6 +126,7 @@ pub fn upload(
     let start_time = Instant::now();
     let mut bytes_sent = 0;
     stdout.execute(cursor::Hide).unwrap();
+    tracing::debug!("Prepared stdout for progress status");
 
     loop {
         stdout.queue(cursor::SavePosition).unwrap();
@@ -207,6 +214,7 @@ pub fn upload(
     }
 
     socket.close(None).unwrap();
+    tracing::debug!("Closed socket connection");
 
     if let Some(access) = access {
         // we can borrow the access level from the access subcommand

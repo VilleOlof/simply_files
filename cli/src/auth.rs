@@ -1,6 +1,13 @@
 use crate::{App, config::Host};
 
-pub fn add(mut app: App, name: String, url: String, token: Option<String>, autoset: bool) {
+pub fn add(
+    mut app: App,
+    name: String,
+    url: String,
+    token: Option<String>,
+    web_url: Option<String>,
+    autoset: bool,
+) {
     let is_name_in_use = app.config.hosts.iter().any(|h| h.name == name);
     if is_name_in_use {
         tracing::error!("Host name is already in use");
@@ -10,6 +17,7 @@ pub fn add(mut app: App, name: String, url: String, token: Option<String>, autos
         name: name.clone(),
         url: url.clone(),
         token: token.clone(),
+        web_url: web_url.clone(),
     });
 
     tracing::info!("Added {name} ({url}) has a new host");
@@ -31,7 +39,7 @@ pub fn ls(app: App) {
     tracing::info!("Saved hosts:");
     for host in app.config.hosts {
         tracing::info!(
-            "{} [{}] {} ({})",
+            "{} [{}] {} / {} ({})",
             if let Some(default_host) = &app.config.default_host {
                 if default_host == &host.name { ">" } else { " " }
             } else {
@@ -39,6 +47,11 @@ pub fn ls(app: App) {
             },
             host.name,
             host.url,
+            if let Some(ref url) = host.web_url {
+                url
+            } else {
+                "No web url"
+            },
             if let Some(_) = host.token {
                 "******"
             } else {
@@ -66,14 +79,16 @@ pub fn rm(mut app: App, name: String) {
     app.config.hosts = new_hosts;
 
     match app.config.default_host {
-        Some(default) => {
-            if default == name {
+        Some(ref default) => {
+            if default == &name {
                 app.config.default_host = None;
                 tracing::info!("Removed {name} as default host");
             }
         }
         _ => (),
     };
+
+    app.config.save();
 }
 
 pub fn set(mut app: App, name: String) {

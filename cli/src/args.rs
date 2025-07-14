@@ -100,7 +100,6 @@ pub enum LinkCommands {
     Create,
     Rm { link_id: String },
     Ls,
-    Sethost { web_url: String },
 }
 
 #[derive(Debug, Subcommand, Clone)]
@@ -114,9 +113,17 @@ pub enum AuthCommands {
         #[arg(help = "The url pointing to the host.")]
         url: String,
         #[arg(
+            short,
+            long,
             help = "The token used for the main host login.\nIf not specified, most commands won't work\nand only token-free commands like one-time link uploads and public file gets will work"
         )]
         token: Option<String>,
+        #[arg(
+            short,
+            long,
+            help = "The URL for the web client interface for this specific host.\nMust be specified to use one-time link and fancy preview related features."
+        )]
+        web_url: Option<String>,
         #[arg(
             short,
             long,
