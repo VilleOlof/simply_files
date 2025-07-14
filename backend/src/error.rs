@@ -68,7 +68,11 @@ impl From<std::io::Error> for SimplyError {
 impl From<sqlx::Error> for SimplyError {
     fn from(value: sqlx::Error) -> Self {
         SimplyError {
-            status_code: StatusCode::INTERNAL_SERVER_ERROR,
+            status_code: if let sqlx::Error::RowNotFound = value {
+                StatusCode::NOT_FOUND
+            } else {
+                StatusCode::INTERNAL_SERVER_ERROR
+            },
             reason: "Failed DB operation".into(),
             err: Some(Box::new(value)),
         }

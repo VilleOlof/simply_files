@@ -3,6 +3,7 @@ mod ssh;
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use sf_core::FileMetadata;
 use std::{
     fmt::Debug,
     io::{Result, Seek, Write},
@@ -37,12 +38,4 @@ pub trait FileSystem: Send + Sync + Debug {
     async fn delete_empty_dir(&self, path: &str) -> Result<()>;
 
     async fn root_directory(&self) -> PathBuf;
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct FileMetadata {
-    pub path: String,
-    pub is_dir: bool,
-    pub size: u64,
-    pub modified: u64,
 }

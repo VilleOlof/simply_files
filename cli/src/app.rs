@@ -21,19 +21,33 @@ impl App {
         }
 
         if let Some(host_str) = &self.args.host {
-            match host_str.split_once('@') {
-                Some((token, url)) => Host {
+            let (token, url) = match host_str.split_once('@') {
+                Some((t, u)) => (t, u),
+                None => {
+                    return Host {
+                        name: String::from("ArgsHost"),
+                        url: host_str.clone(),
+                        token: None,
+                        web_url: None,
+                    };
+                }
+            };
+
+            if url.contains('@') {
+                let (url, web_url) = url.split_once('@').unwrap();
+                Host {
+                    name: String::from("ArgsHost"),
+                    url: url.to_string(),
+                    token: Some(token.to_string()),
+                    web_url: Some(web_url.to_string()),
+                }
+            } else {
+                Host {
                     name: String::from("ArgsHost"),
                     url: url.to_string(),
                     token: Some(token.to_string()),
                     web_url: None,
-                },
-                None => Host {
-                    name: String::from("ArgsHost"),
-                    url: host_str.clone(),
-                    token: None,
-                    web_url: None,
-                },
+                }
             }
         } else {
             if let Some(default_host) = &self.config.default_host {

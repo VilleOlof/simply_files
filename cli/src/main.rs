@@ -14,6 +14,8 @@ mod args;
 mod auth;
 mod config;
 mod get;
+mod ls;
+mod rm;
 mod upload;
 
 // TODO: Beautify all the output, switch from tracing to like a custom logging that
@@ -41,6 +43,8 @@ fn main() {
             metadata,
             link,
         } => get::get(app, file, local, metadata, link),
+        Command::Rm { file } => rm::rm(&app, file),
+        Command::Ls { directory } => ls::ls(app, directory),
         Command::Access { file, access } => access::access(app, file, access),
         Command::Auth(auth_command) => match auth_command {
             AuthCommands::Add {

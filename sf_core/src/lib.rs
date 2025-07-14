@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{path::PathBuf, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 use serde_repr::Serialize_repr;
@@ -99,4 +99,71 @@ pub struct PreviewData {
     pub access: i64,
     pub path: Option<String>,
     pub cant_preview: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ClientFile {
+    pub path: String,
+    pub is_dir: bool,
+    pub size: u64,
+    pub modified: u64,
+    pub id: Option<String>,
+    pub access: Option<i64>,
+}
+
+impl ClientFile {
+    // this whole thing is a meh thing
+    pub fn from(
+        base_path: PathBuf,
+        real_files: Vec<FileMetadata>,
+        db_files: Vec<File>,
+    ) -> Vec<ClientFile> {
+        let mut files = vec![];
+
+        for real in real_files {
+            let real_path = (base_path.join(&std::path::Path::new(&real.path)))
+                .to_string_lossy()
+                .to_string();
+            let db = match db_files
+                .iter()
+                .find(|f| f.path.replace("\\", "/") == real_path.replace("\\", "/"))
+            {
+                Some(d) => d,
+                None => {
+                    files.push(ClientFile {
+                        path: real.path,
+                        is_dir: real.is_dir,
+                        size: real.size,
+                        modified: real.modified,
+                        id: None,
+                        access: None,
+                    });
+                    continue;
+                }
+            };
+            // file is still uploading (or something is wrong)
+            if db.size == 0 {
+                continue;
+            }
+
+            files.push(ClientFile {
+                path: real.path.clone(),
+                is_dir: real.is_dir,
+                size: real.size,
+                modified: real.modified,
+                id: Some(db.id.clone()),
+                access: Some(db.get_access() as i64),
+            });
+        }
+
+        files
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct FileMetadata {
+    pub path: String,
+    pub is_dir: bool,
+    pub size: u64,
+    pub modified: u64,
 }

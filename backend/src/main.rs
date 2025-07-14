@@ -77,6 +77,14 @@ async fn main() {
         .route("/preview_data/{*id}", get(preview::get_preview_data))
         .route("/o/upload/{*name}", any(upload::public::upload))
         .route("/verify_link/{*id}", post(protected::link::verify_link))
+        .route(
+            "/translate_path/{*path}",
+            get(protected::path_to_id::path_to_id),
+        )
+        .route(
+            "/translate_id/{*id}",
+            get(protected::path_to_id::id_to_path),
+        )
         .with_state(state.clone())
         .nest("/speed_test", speed_test())
         .nest("/m", protected_routes(state.clone()))

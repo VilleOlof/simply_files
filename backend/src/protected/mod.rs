@@ -22,7 +22,7 @@ mod file;
 mod file_system;
 pub mod link;
 mod logout;
-mod path_to_id;
+pub mod path_to_id;
 mod storage_limit;
 
 /// Routes that require a valid "token" specified in the config as Authorization header
@@ -37,7 +37,6 @@ pub fn protected_routes(state: Arc<AppState>) -> Router {
         .route("/file_system", get(file_system::get_file_system))
         .route("/storage_limit", get(storage_limit::get_used_storage_space))
         .route("/directory/{*path}", get(directory::get_files))
-        .route("/translate_path/{*path}", get(path_to_id::path_to_id))
         .route("/directory", get(directory::get_root))
         .route("/directory/{*path}", post(directory::add_directory))
         .route("/directory/{*path}", delete(directory::delete_directory))

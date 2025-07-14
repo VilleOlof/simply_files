@@ -15,6 +15,9 @@ tungstenite = "0.27.0"
 ureq = { version = "3.0.12", features = ["json"] }
 crossterm = "0.29.0"
 human_bytes = "0.4.3"
+anstream = "0.6.19"
+owo-colors = "4.2.2"
+comfy-table = "7.1.4"
 
 [[bin]]
 name = "sf"

@@ -1,7 +1,9 @@
 use std::{path::PathBuf, str::FromStr};
 
 use clap::{Parser, Subcommand};
-use sf_core::FileAccess;
+use sf_core::{File, FileAccess};
+
+use crate::app::App;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -10,7 +12,7 @@ pub struct Args {
     pub command: Command,
     #[arg(
         long,
-        help = "Specify the host to operate the command on\nIf not specified, will use the default host (if set)\nFormat in token@url"
+        help = "Specify the host to operate the command on\nIf not specified, will use the default host (if set)\nFormat in token@url\nWeb url can also be specified if appended: token@url@web_url"
     )]
     pub host: Option<String>,
     #[arg(
@@ -151,6 +153,47 @@ pub enum FileIdentifier {
 
 impl FileIdentifier {
     const ID_LEN: usize = 10;
+
+    /// If this is not a type of [`FileIdentifier::Id`]  
+    ///
+    /// It will make a http request to convert [`FileIdentifier::Path`] to [`FileIdentifier::Id`]
+    pub fn id(self, app: &App) -> String {
+        let path = match self {
+            FileIdentifier::Id(id) => return id,
+            FileIdentifier::Path(path) => path,
+        };
+
+        let mut request = ureq::get(app.get_url(format!(
+            "/translate_path/{}",
+            path.to_string_lossy().to_string()
+        )));
+        request = app.add_auth_to_req(request);
+        request = app.add_agent_to_req(request);
+
+        let mut response = request.call().unwrap();
+        let file: File = response.body_mut().read_json().unwrap();
+
+        file.id
+    }
+
+    /// If this is not a type of [`FileIdentifier::Path`]  
+    ///
+    /// It will make a http request to convert [`FileIdentifier::Id`] to [`FileIdentifier::Path`]
+    pub fn path(self, app: &App) -> PathBuf {
+        let id = match self {
+            FileIdentifier::Id(id) => id,
+            FileIdentifier::Path(path) => return path,
+        };
+
+        let mut request = ureq::get(app.get_url(format!("/translate_id/{}", id)));
+        request = app.add_auth_to_req(request);
+        request = app.add_agent_to_req(request);
+
+        let mut response = request.call().unwrap();
+        let file: File = response.body_mut().read_json().unwrap();
+
+        PathBuf::from(file.path)
+    }
 }
 
 impl FromStr for FileIdentifier {

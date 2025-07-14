@@ -6,10 +6,9 @@ use axum::{
     http::StatusCode,
     response::Result,
 };
-use serde::Serialize;
-use sf_core::File;
+use sf_core::ClientFile;
 
-use crate::{AppState, error::SimplyError, file_system::FileMetadata};
+use crate::{AppState, error::SimplyError};
 
 pub async fn get_files(
     Path(path): Path<String>,
@@ -22,65 +21,6 @@ pub async fn get_root(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Vec<ClientFile>>, SimplyError> {
     get(state, None).await
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct ClientFile {
-    pub path: String,
-    pub is_dir: bool,
-    pub size: u64,
-    pub modified: u64,
-    pub id: Option<String>,
-    pub access: Option<i64>,
-}
-
-impl ClientFile {
-    // this whole thing is a meh thing
-    pub fn from(
-        base_path: PathBuf,
-        real_files: Vec<FileMetadata>,
-        db_files: Vec<File>,
-    ) -> Vec<ClientFile> {
-        let mut files = vec![];
-
-        for real in real_files {
-            let real_path = (base_path.join(&std::path::Path::new(&real.path)))
-                .to_string_lossy()
-                .to_string();
-            let db = match db_files
-                .iter()
-                .find(|f| f.path.replace("\\", "/") == real_path.replace("\\", "/"))
-            {
-                Some(d) => d,
-                None => {
-                    files.push(ClientFile {
-                        path: real.path,
-                        is_dir: real.is_dir,
-                        size: real.size,
-                        modified: real.modified,
-                        id: None,
-                        access: None,
-                    });
-                    continue;
-                }
-            };
-            // file is still uploading (or something is wrong)
-            if db.size == 0 {
-                continue;
-            }
-
-            files.push(ClientFile {
-                path: real.path.clone(),
-                is_dir: real.is_dir,
-                size: real.size,
-                modified: real.modified,
-                id: Some(db.id.clone()),
-                access: Some(db.get_access() as i64),
-            });
-        }
-
-        files
-    }
 }
 
 async fn get(

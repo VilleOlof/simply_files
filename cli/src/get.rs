@@ -1,33 +1,12 @@
 use std::{env::current_dir, fs::exists, path::PathBuf, time::Instant};
 
 use human_bytes::human_bytes;
-use sf_core::{File, FileAccess, PreviewData};
+use sf_core::{FileAccess, PreviewData};
 
 use crate::{app::App, args::FileIdentifier};
 
 pub fn get(app: App, file: FileIdentifier, local: Option<PathBuf>, metadata: bool, link: bool) {
-    let id = match file {
-        FileIdentifier::Id(id) => id,
-        FileIdentifier::Path(path) => {
-            if app.get_host().token.is_none() {
-                return tracing::error!(
-                    "Downloading via path without a token is currently unsupported"
-                );
-            }
-
-            tracing::debug!("Translating {:?} to Id", path);
-
-            let mut request =
-                ureq::get(app.get_url(format!("/m/translate_path/{}", path.to_string_lossy())));
-            request = app.add_auth_to_req(request);
-            request = app.add_agent_to_req(request);
-            let mut response = request.call().unwrap();
-
-            let file: File = response.body_mut().read_json().unwrap();
-
-            file.id
-        }
-    };
+    let id = file.id(&app);
 
     let data = get_metadata(&app, &id);
     // if local is provided, use it only as the outpath, but if not we combine current_dir + file_name

@@ -31,11 +31,11 @@ Should allow for most features that the web client has atleast.
 [X] dotfs get <file_identifier> <output_path?> --metadata --link
 # Removes a file or directory from the server.
 # Only deletes empty directories.
-[ ] dotfs rm <file_identifier>
+[X] dotfs rm <file_identifier>
 # Renames a file or directory on the server.
 [ ] dotfs mv <file_identifier> <new_name>
 # Lists files in a directory on the server.
-[ ] dotfs ls <directory>
+[X] dotfs ls <directory>
 # Creates a new directory on the server.
 [ ] dotfs mkdir <directory>
 # Changes a files access to public or private.
